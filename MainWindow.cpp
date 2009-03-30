@@ -126,11 +126,11 @@ void MainWindow::initMenuBar()
     QMenuBar* menu = menuBar(); 
 
     Q3PopupMenu* file = new Q3PopupMenu( menu );
-    file->insertItem("&Save As", this, SLOT(saveAs()), CTRL+Key_S);
+    file->insertItem("&Save As", this, SLOT(saveAs()), Qt::CTRL + Qt::Key_S);
     file->insertSeparator();
-    file->insertItem("Choose Font", this, SLOT(chooseFont()), ALT+Key_F);
+    file->insertItem("Choose Font", this, SLOT(chooseFont()), Qt::ALT + Qt::Key_F);
     file->insertSeparator();
-    file->insertItem("E&xit", qApp, SLOT(quit()), CTRL+Key_Q);
+    file->insertItem("E&xit", qApp, SLOT(quit()), Qt::CTRL + Qt::Key_Q);
     file->insertSeparator();
     menu->insertItem("&Menu", file);
 
@@ -138,7 +138,7 @@ void MainWindow::initMenuBar()
     menu->insertSeparator();
 
     Q3PopupMenu* help = new Q3PopupMenu( menu );
-    help->insertItem("&About", this, SLOT(help()), Key_F1);
+    help->insertItem("&About", this, SLOT(help()), Qt::Key_F1);
     menu->insertItem(tr("Помощь"),help);
 }
 
@@ -293,10 +293,10 @@ void MainWindow::initControlDockWindow()
     QPushButton *rcButton = new QPushButton(tr("Conductivity(rc)"), ptButtons); 
     connect(rcButton,SIGNAL(clicked()), this, SLOT(computeRrc()));
 
-    this->moveDockWindow(control,Right);
-    setDockEnabled(DockLeft, false);  
-    setDockEnabled(DockBottom, false);  
-    setDockEnabled(DockTop, false); 
+    this->moveDockWindow(control,Qt::Right);
+    setDockEnabled(Qt::DockLeft, false);  
+    setDockEnabled(Qt::DockBottom, false);  
+    setDockEnabled(Qt::DockTop, false); 
     control->setCloseMode(Q3DockWindow::Undocked);
     control->setMinimumWidth( control->sizeHint().width());
 } 
@@ -385,6 +385,7 @@ bool MainWindow::saveAs()
         curFile = fn;
         return this->save();
     }
+    return false;
 }
 
 bool MainWindow::save()
@@ -665,7 +666,7 @@ void MainWindow::drawModelA()
         n->show();
     }
 
-    v = model->nV();
+    int v = model->nV();
     for (int w = 0; w < model->nW(); ++w)
     {
         double W = model->W[w];
@@ -692,11 +693,14 @@ void MainWindow::drawModelI()
 {//   this->selectSigma(QComboBox::currentItem());
     clear();
     Q3Canvas *pCanvas = cv->canvas();
+    cv->adjustSize();
 
     // Set view port
     const double factor = 0.95;
-    double xscale = factor * pCanvas->width()  / (model->xmax() - model->xmin());
-    double yscale = factor * pCanvas->height() / (model->ymax() - model->ymin());
+    double cw = pCanvas->width();
+    double ch = pCanvas->height();
+    double xscale = factor * cw  / (model->xmax() - model->xmin());
+    double yscale = factor * ch / (model->ymax() - model->ymin());
     double scale = xscale < yscale ? xscale : yscale;
     
     QPair<double,double> offset;
@@ -751,7 +755,7 @@ void MainWindow::drawModelI()
     }
 
 //#if 1    
-    v = model->nV();
+    int v = model->nV();
     for (int w = 0; w < model->nW(); ++w)
     {
         double W = model->W[w];
@@ -859,7 +863,7 @@ void MainWindow::drawModelR()
         n->show();
     }
 
-    v = model->nV();
+    int v = model->nV();
     for (int w = 0; w < model->nW(); ++w)
     {
         double W = model->W[w];
@@ -953,7 +957,7 @@ MainWindow::setCapacity()
     int nv = model->nV(); // number of defined nodes
     int nw = model->nW(); // number of undefined nodes
     int ni = model->nI(); // number of current links
-    double imax;
+    double imax = 1e-300;
     Q3MemArray<double> t( nv+nw );
     int nt;
         t.fill(0.0);

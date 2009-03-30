@@ -8,6 +8,7 @@
 #include <Q3MemArray>
 #include <cmath>
 #include <q3textstream.h>
+#include <QMap>
 
 // Find maximum value in a container
 template<typename T>
@@ -515,11 +516,11 @@ void Percol2D::compute()
         Q3MemArray<int> from = this->from(nv+w);
         Q3MemArray<int> to = this->to(nv+w);
         double total_i = 0;
-        for (int i = 0; i < from.size(); ++i)
+        for (size_t i = 0; i < from.size(); ++i)
         {
             total_i +=  this->I[ from[i] ];
         }
-        for (int i = 0; i < to.size(); ++i)
+        for (size_t i = 0; i < to.size(); ++i)
         {
             total_i -=  this->I[ to[i] ];
         }

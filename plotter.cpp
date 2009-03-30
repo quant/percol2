@@ -17,27 +17,28 @@
 using namespace std;
 #include "plotter.h"
 #include <qmessagebox.h> 
+#include <QtGui>
 
 Plotter::Plotter(QWidget *parent, const char *name, Qt::WFlags flags)
 : QWidget(parent, name, flags | Qt::WNoAutoErase)
 {
-    setBackgroundMode(PaletteDark);
+    setBackgroundRole(QPalette::Dark);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    setFocusPolicy(StrongFocus);
+    setFocusPolicy(Qt::StrongFocus);
     rubberBandIsShown = false;
 
     zoomInButton = new QToolButton(this);
-    zoomInButton->setIconSet(QPixmap::fromMimeSource("images/zoomin.png"));
+    zoomInButton->setIconSet(QIcon("images/zoomin.png"));
     zoomInButton->adjustSize();
     connect(zoomInButton, SIGNAL(clicked()), this, SLOT(zoomIn()));
 
     zoomOutButton = new QToolButton(this);
-    zoomOutButton->setIconSet(QPixmap::fromMimeSource("images/zoomout.png"));
+    zoomOutButton->setIconSet(QIcon("images/zoomout.png"));
     zoomOutButton->adjustSize();
     connect(zoomOutButton, SIGNAL(clicked()), this, SLOT(zoomOut()));
 
     zoomAllButton = new QToolButton(this);
-    zoomAllButton->setIconSet(QPixmap::fromMimeSource("images/zoomall.png"));
+    zoomAllButton->setIconSet(QIcon("images/zoomall.png"));
     zoomAllButton->adjustSize();
     zoomAllButton->show();
     connect(zoomAllButton, SIGNAL(clicked()), this, SLOT(zoomAll()));
@@ -158,10 +159,11 @@ void Plotter::paintEvent(QPaintEvent *event)
         painter.setPen(colorGroup().light());
         painter.drawRect(rubberBandRect.normalize());
     }
-    if (hasFocus()) {
-        style().drawPrimitive(QStyle::PE_FocusRect, &painter,
-            rect(), colorGroup(),
-            QStyle::Style_FocusAtBorder, colorGroup().dark());
+    if (hasFocus()) 
+    {
+        QStyleOptionFocusRect option;
+        option.initFrom(this);
+        style()->drawPrimitive(QStyle::PE_FrameFocusRect, &option, &painter, this);
     }
 }
 void Plotter::resizeEvent(QResizeEvent *)
@@ -174,26 +176,27 @@ void Plotter::resizeEvent(QResizeEvent *)
 
 void Plotter::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button()==LeftButton)
+    if (event->button()== Qt::LeftButton)
     {
         rubberBandIsShown = true;
         rubberBandRect.setTopLeft(event->pos());
         rubberBandRect.setBottomRight(event->pos());
         updateRubberBandRegion();
-        setCursor(crossCursor);
+        setCursor(Qt::CrossCursor);
     }
 }
 void Plotter::mouseMoveEvent(QMouseEvent *event)
 {
-    if (event->state()& LeftButton)
-    {updateRubberBandRegion();
-    rubberBandRect.setBottomRight(event->pos());
-    updateRubberBandRegion();
+    if (event->state() & Qt::LeftButton)
+    {
+        updateRubberBandRegion();
+        rubberBandRect.setBottomRight(event->pos());
+        updateRubberBandRegion();
     }
 }
 void Plotter::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button()==LeftButton)
+    if (event->button() == Qt::LeftButton)
     {
         rubberBandIsShown = false;
         updateRubberBandRegion();
@@ -219,31 +222,31 @@ void Plotter::mouseReleaseEvent(QMouseEvent *event)
 void Plotter::keyPressEvent(QKeyEvent *event)
 {
     switch (event->key()){
-    case Key_Plus:
+    case Qt::Key_Plus:
         zoomIn();
         break;
-    case Key_Delete:
+    case Qt::Key_Delete:
         clearAll();
         break;
-    case Key_Insert:
+    case Qt::Key_Insert:
         savePlotAs();
         break;
-    case Key_Minus:
+    case Qt::Key_Minus:
         zoomOut();
         break;
-    case Key_Left:
+    case Qt::Key_Left:
         zoomStack[curZoom].scroll(-1,0);
         refreshPixmap();
         break;
-    case Key_Right:
+    case Qt::Key_Right:
         zoomStack[curZoom].scroll(+1,0);
         refreshPixmap();
         break;
-    case Key_Down:
+    case Qt::Key_Down:
         zoomStack[curZoom].scroll(0, -1);
         refreshPixmap();
         break;
-    case Key_Up:
+    case Qt::Key_Up:
         zoomStack[curZoom].scroll(0, +1);
         refreshPixmap();
         break;
@@ -255,7 +258,7 @@ void Plotter::wheelEvent(QWheelEvent *event)
 {
     int numDegrees = event->delta()/8;
     int numTicks = numDegrees / 15;
-    if(event->orientation()==Horizontal)
+    if(event->orientation() == Qt::Horizontal)
         zoomStack[curZoom].scroll(numTicks,0);
     else 
         zoomStack[curZoom].scroll(0, numTicks);
@@ -273,7 +276,7 @@ void Plotter::refreshPixmap()
 {
     pixmap.resize(size());
     pixmap.fill(this,0,0);
-    QPainter painter(&pixmap, this);
+    QPainter painter(&pixmap);
     drawGrid(&painter);
     drawCurves(&painter);
     update();
@@ -294,7 +297,7 @@ void Plotter::drawGrid(QPainter *painter)
         painter->setPen(light);
         painter->drawLine(x, rect.bottom(), x, rect.bottom()+5);
         painter->drawText(x-50, rect.bottom()+5, 100, 15,
-            AlignHCenter | AlignTop,
+            Qt::AlignHCenter | Qt::AlignTop,
             QString::number(label));
     }
     for(int j = 0; j<=settings.numYTicks; ++j) {
@@ -305,7 +308,7 @@ void Plotter::drawGrid(QPainter *painter)
         painter->setPen(light);
         painter->drawLine(rect.left()-5, y, rect.left(),y);
         painter->drawText(rect.left()-Margin, y-10, Margin-5, 20,
-            AlignRight | AlignVCenter,
+            Qt::AlignRight | Qt::AlignVCenter,
             QString::number(label));
     } 
     painter->drawRect(rect);
@@ -339,7 +342,7 @@ void Plotter::drawCurves(QPainter *painter)
                 ++numPoints;
             }
         }
-        points.truncate(numPoints);
+        points.erase(points.begin()+numPoints, points.end()); //points.truncate(numPoints);
         painter->setPen(colorForIds[(uint)id%6]);
         painter->drawPolyline(points);
         ++it;
@@ -389,11 +392,12 @@ void PlotSettings::adjustAxis(double &min, double &max, int &numTicks)
 bool Plotter::savePlotAs()
 {
     QString fn = Q3FileDialog::getSaveFileName( QString::null, QString::null, this );
-    if ( !fn.isEmpty() ) {
+    if ( !fn.isEmpty() ) 
+    {
         curFileCurve = fn;
         return this->savePlot();
     }
- 
+    return false;
 }
 
 bool Plotter::savePlot()
@@ -433,7 +437,7 @@ bool Plotter::savePlot()
         s.sprintf("Curve %i\n",id);
         o << s;
         const CurveData &data = it->second;
-        int numPoints=0;
+//        int numPoints=0;
         int maxPoints = data.size()/2;
         Q3PointArray points(maxPoints);
         for (int i=0; i<maxPoints; ++i){

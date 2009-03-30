@@ -12,3 +12,4 @@ HEADERS += mainwindow.h myparam.h Percol2D.h plotter.h
 SOURCES += main.cpp MainWindow.cpp myparam.cpp Percol2D.cpp plotter.cpp
 #The following line was inserted by qt3to4
 QT +=  qt3support 
+include(percol.pri)
