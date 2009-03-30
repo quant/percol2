@@ -4,7 +4,7 @@
 #ifndef PERCOL2D_H_INCLUDED
 #define PERCOL2D_H_INCLUDED
 
-#include <qmemarray.h>
+#include <q3memarray.h>
 #include <qpair.h>
 
 class Percol2D
@@ -14,10 +14,10 @@ public:
     virtual ~Percol2D(void);
 
     // Electrical properties of the grid
-    QMemArray<double> Sigma;   // nI conductivities (defined)
-    QMemArray<double> I; // nI currents (computed)
-    QMemArray<double> V; // nV defined voltages
-    QMemArray<double> W; // nW computed voltages
+    Q3MemArray<double> Sigma;   // nI conductivities (defined)
+    Q3MemArray<double> I; // nI currents (computed)
+    Q3MemArray<double> V; // nV defined voltages
+    Q3MemArray<double> W; // nW computed voltages
 
     int nV() const { return V.size(); } // number of defined voltage nodes
     int nW() const { return W.size(); } // number of unknown voltage nodes
@@ -29,8 +29,8 @@ public:
     // They are defined by the implementation of the model
     virtual int S(int i,int v) const = 0;
     virtual QPair<int,int> ends(int i) const = 0;
-    virtual QMemArray<int> from(int v) const = 0;
-    virtual QMemArray<int> to(int v) const = 0;
+    virtual Q3MemArray<int> from(int v) const = 0;
+    virtual Q3MemArray<int> to(int v) const = 0;
     virtual QPair<double,double> xy(int v) const = 0;
     virtual double xmax() const = 0;
     virtual double xmin() const = 0;
@@ -57,8 +57,8 @@ public:
 
     virtual int S(int i,int v) const;
     virtual QPair<int,int> ends(int i) const;
-    virtual QMemArray<int> from(int v) const;
-    virtual QMemArray<int> to(int v) const;
+    virtual Q3MemArray<int> from(int v) const;
+    virtual Q3MemArray<int> to(int v) const;
     virtual QPair<double,double> xy(int v) const;
     virtual double xmax() const;
     virtual double xmin() const;

@@ -1,8 +1,8 @@
 #ifndef MAINWINDOW_H_INCLUDED
 #define MAINWINDOW_H_INCLUDED
 //#include <qpushbutton.h> 
-#include <qmainwindow.h>
-#include <qcanvas.h>
+#include <q3mainwindow.h>
+#include <q3canvas.h>
 #include <qcombobox.h> 
 #include <qstatusbar.h>
 #include <qmessagebox.h>
@@ -12,7 +12,7 @@
 #include <qevent.h>
 //#include <qtabwidget.h>
 //#include <qgroupbox.h> 
-#include <qbuttongroup.h> 
+#include <q3buttongroup.h> 
 //#include <qradiobutton.h> 
 //#include <qgrid.h>
 //#include <qvbox.h>
@@ -20,16 +20,19 @@
 //#include <qworkspace.h> 
 //#include <qpopupmenu.h>
 #include <qdialog.h> 
+//Added by qt3to4:
+#include <QResizeEvent>
+#include <QMouseEvent>
 
 #include "percol2d.h"
 #include "plotter.h"
 #include "myparam.h"
 
-class PercolView : public QCanvasView
+class PercolView : public Q3CanvasView
 {
     Q_OBJECT
 public:
-    PercolView(QCanvas& c, QWidget* parent=0, const char* name=0, WFlags f=0);
+    PercolView(Q3Canvas& c, QWidget* parent=0, const char* name=0, Qt::WFlags f=0);
     void clear();
     void setModel(Percol2D *m) { model = m; }
 
@@ -40,11 +43,11 @@ private:
 
 //---------------------------------------------------------------------
 // Define main window 
-class MainWindow : public QMainWindow
+class MainWindow : public Q3MainWindow
 {
     Q_OBJECT
 public:
-    MainWindow(QWidget* parent=0, const char* name=0, WFlags f=0);
+    MainWindow(QWidget* parent=0, const char* name=0, Qt::WFlags f=0);
     ~MainWindow(){ clear(); }
     void setModel();
 
@@ -98,12 +101,12 @@ private:
     inline double singleSigmaT0(double E, double V, double r, double EFc);
 
     QFont myfont;
-    QCanvasView *cv;
+    Q3CanvasView *cv;
 //    QGroupBox *oneResistorBox;
 //    QPopupMenu *options;
     Percol2D *model;
 //    QComboBox *comboSigmaType;
-      QButtonGroup *typeResistor;
+      Q3ButtonGroup *typeResistor;
 //    QLineEdit *editRecordCond, *editSigmaMin;
     QString curFile;
 //    QLabel *locationLabel;

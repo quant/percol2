@@ -1,4 +1,4 @@
-#include <qvbox.h>
+#include <q3vbox.h>
 #include <qlabel.h>
 #include "myparam.h"
 
@@ -6,7 +6,7 @@ void
 MyParamD::setDisplay(const QString& label, QWidget *parent)
 {
     if (ledit) delete ledit;
-    QHBox *hbox = new QHBox(parent);
+    Q3HBox *hbox = new Q3HBox(parent);
     new QLabel(label,hbox);
     this->ledit = new QLineEdit(hbox);
     connect(ledit,SIGNAL(returnPressed()),this,SLOT(textToValue()));
@@ -38,7 +38,7 @@ void
 MyParamI::setDisplay(const QString& label, QWidget *parent)
 {
     if (ledit) delete ledit;
-    QHBox *hbox = new QHBox(parent);
+    Q3HBox *hbox = new Q3HBox(parent);
     new QLabel(label,hbox);
     this->ledit = new QLineEdit(hbox);
     connect(ledit,SIGNAL(returnPressed()),this,SLOT(textToValue()));

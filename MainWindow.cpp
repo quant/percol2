@@ -1,11 +1,16 @@
-#include <qpopupmenu.h>
+#include <q3popupmenu.h>
 #include <qmenubar.h>
 #include <qapplication.h>
 #include <qmessagebox.h>
-#include <qcanvas.h>
+#include <q3canvas.h>
 #include <qlabel.h>
 #include <qfile.h>
-#include <qtextstream.h>
+#include <q3textstream.h>
+//Added by qt3to4:
+#include <QResizeEvent>
+#include <QMouseEvent>
+#include <Q3VBoxLayout>
+#include <Q3MemArray>
 #include "mainwindow.h"
 #include "mkl.h"
 #include <math.h>
@@ -13,16 +18,16 @@
 #include <qvalidator.h> 
 #include <qlayout.h>  
 #include <qlineedit.h> 
-#include <qtoolbar.h>
-#include <qhbox.h>
-#include <qvbox.h>
-#include <qfiledialog.h>
+#include <q3toolbar.h>
+#include <q3hbox.h>
+#include <q3vbox.h>
+#include <q3filedialog.h>
 #include <qfont.h> 
 #include <qfontdialog.h> 
 //#include <qgroupbox.h> 
-#include <qbuttongroup.h> 
+#include <q3buttongroup.h> 
 #include <qradiobutton.h> 
-#include <qgrid.h>
+#include <q3grid.h>
 #include <qpushbutton.h>
 #include "myparam.h"
 
@@ -120,7 +125,7 @@ void MainWindow::initMenuBar()
 {
     QMenuBar* menu = menuBar(); 
 
-    QPopupMenu* file = new QPopupMenu( menu );
+    Q3PopupMenu* file = new Q3PopupMenu( menu );
     file->insertItem("&Save As", this, SLOT(saveAs()), CTRL+Key_S);
     file->insertSeparator();
     file->insertItem("Choose Font", this, SLOT(chooseFont()), ALT+Key_F);
@@ -132,7 +137,7 @@ void MainWindow::initMenuBar()
 
     menu->insertSeparator();
 
-    QPopupMenu* help = new QPopupMenu( menu );
+    Q3PopupMenu* help = new Q3PopupMenu( menu );
     help->insertItem("&About", this, SLOT(help()), Key_F1);
     menu->insertItem(tr("Помощь"),help);
 }
@@ -175,12 +180,12 @@ void MainWindow::initStatusBar()
 
 void MainWindow::initControlDockWindow()
 {
-    QToolBar *control = new QToolBar(this);
+    Q3ToolBar *control = new Q3ToolBar(this);
     control->setLabel(tr("Control Panel"));
 //    control->setOrientation(Qt::Vertical);
 
-    QGroupBox *oneResistorBox =new QGroupBox(6, Qt::Vertical, "One Resistor", control);
-    QGrid *gr1=new QGrid(2,Qt::Horizontal, oneResistorBox);
+    Q3GroupBox *oneResistorBox =new Q3GroupBox(6, Qt::Vertical, "One Resistor", control);
+    Q3Grid *gr1=new Q3Grid(2,Qt::Horizontal, oneResistorBox);
     gr1->setMargin(3);
     gr1->setSpacing(10);
 
@@ -198,7 +203,7 @@ void MainWindow::initControlDockWindow()
 //    this->ExEdit->setValidator(&theDoubleValidator);
 
 
-    QButtonGroup *pt1Buttons =new QButtonGroup(2, Qt::Horizontal, "Compute Conductance G", oneResistorBox);
+    Q3ButtonGroup *pt1Buttons =new Q3ButtonGroup(2, Qt::Horizontal, "Compute Conductance G", oneResistorBox);
 
     QPushButton *TButton1  = new QPushButton(tr("G(T)"), pt1Buttons); 
     TButton1->setMinimumWidth( TButton1->sizeHint().width());
@@ -210,22 +215,22 @@ void MainWindow::initControlDockWindow()
 
 
     //------------------------------
-    QGroupBox *networkBox =new QGroupBox(8, Qt::Vertical, "Resistor Network", control);
-    QGrid *gr2=new QGrid(2,Qt::Horizontal, networkBox);
+    Q3GroupBox *networkBox =new Q3GroupBox(8, Qt::Vertical, "Resistor Network", control);
+    Q3Grid *gr2=new Q3Grid(2,Qt::Horizontal, networkBox);
     gr2->setMargin(3);
     gr2->setSpacing(10);
 
-    this->typeResistor = new QButtonGroup(3, Qt::Vertical, "Resistor Network Type", gr2);
+    this->typeResistor = new Q3ButtonGroup(3, Qt::Vertical, "Resistor Network Type", gr2);
     new QRadioButton(tr("Одинаковые сопротивления"),typeResistor);  
     new QRadioButton(tr("Случайные с exp разбросом"),typeResistor);  
     QRadioButton *type3 = new QRadioButton(tr("Случ. одномерные сужения"),typeResistor);
     type3->setChecked(true);
     connect(typeResistor,SIGNAL(clicked(int)),this,SLOT(selectSigma(int)));
-    QVBox *vb=new QVBox(gr2);
+    Q3VBox *vb=new Q3VBox(gr2);
     this->rows.setDisplay(("rows"), vb);
     this->cols.setDisplay(("cols"), vb);
     this->seed.setDisplay(("seed"), vb);
-    QGrid *gr3=new QGrid(2,Qt::Horizontal, networkBox);
+    Q3Grid *gr3=new Q3Grid(2,Qt::Horizontal, networkBox);
     gr3->setMargin(3);
     gr3->setSpacing(10);
     this->sigmaU.setDisplay(("sigmaU"), gr3);
@@ -242,7 +247,7 @@ void MainWindow::initControlDockWindow()
 
 //    rowsEdit->setValidator(&thePosIntValidator);
  
-    QButtonGroup *p2Buttons =new QButtonGroup(2, Qt::Horizontal, "Compute Model", networkBox);
+    Q3ButtonGroup *p2Buttons =new Q3ButtonGroup(2, Qt::Horizontal, "Compute Model", networkBox);
 
     QPushButton *computeButton = new QPushButton(tr("Compute"), p2Buttons); 
     computeButton->setDefault(true);
@@ -258,9 +263,9 @@ void MainWindow::initControlDockWindow()
 //    combo->setCurrentItem(2);
 //    connect(combo,SIGNAL(activated(int)),this,SLOT(selectSigma(int)));
 
-    QGrid *gr4=new QGrid(2,Qt::Horizontal, networkBox);
+    Q3Grid *gr4=new Q3Grid(2,Qt::Horizontal, networkBox);
 //-----------
-    QButtonGroup *cvButtons =new QButtonGroup(3, Qt::Vertical, "Canvas Images", gr4);
+    Q3ButtonGroup *cvButtons =new Q3ButtonGroup(3, Qt::Vertical, "Canvas Images", gr4);
 
     QPushButton *drawResButton = new QPushButton(tr("Conductivity network"), cvButtons); 
     connect(drawResButton,SIGNAL(clicked()), this, SLOT(drawModelR()));
@@ -271,7 +276,7 @@ void MainWindow::initControlDockWindow()
     QPushButton *drawHeatButton = new QPushButton(tr("Draw Heat I*V"), cvButtons); 
     connect(drawHeatButton,SIGNAL(clicked()), this, SLOT(drawModelA()));
 //-----------     
-    QButtonGroup *ptButtons =new QButtonGroup(3, Qt::Vertical, "Plotter Images", gr4);
+    Q3ButtonGroup *ptButtons =new Q3ButtonGroup(3, Qt::Vertical, "Plotter Images", gr4);
 
     QPushButton *r0Button = new QPushButton(tr("Conductivity(U)"), ptButtons); 
     connect(r0Button,SIGNAL(clicked()), this, SLOT(computeRU()));
@@ -292,7 +297,7 @@ void MainWindow::initControlDockWindow()
     setDockEnabled(DockLeft, false);  
     setDockEnabled(DockBottom, false);  
     setDockEnabled(DockTop, false); 
-    control->setCloseMode(QDockWindow::Undocked);
+    control->setCloseMode(Q3DockWindow::Undocked);
     control->setMinimumWidth( control->sizeHint().width());
 } 
 
@@ -301,16 +306,16 @@ void MainWindow::initCanvasView()
 {
 
 //    QCanvas *c = new QCanvas(800,800);
-    QCanvas *c = new QCanvas(600,600);
+    Q3Canvas *c = new Q3Canvas(600,600);
     c->setAdvancePeriod(30);
-    cv = new QCanvasView(c,this);
+    cv = new Q3CanvasView(c,this);
     setCentralWidget(cv);
 }
 void MainWindow::initPlotterU() 
 {
     winPlotU = new QDialog(this);
     winPlotU->setCaption(tr("Dependences G(U):"));
-    QVBoxLayout *layout=new QVBoxLayout(winPlotU);
+    Q3VBoxLayout *layout=new Q3VBoxLayout(winPlotU);
     this->plotterU= new Plotter(winPlotU);
     this->plotterU = new Plotter(winPlotU);
     this->plotterU->setCurveData(1, this->plotdata);
@@ -322,7 +327,7 @@ void MainWindow::initPlotterT()
 {
     winPlotT = new QDialog(this);
     winPlotT->setCaption(tr("Dependences G(T):"));
-    QVBoxLayout *layout=new QVBoxLayout(winPlotT);
+    Q3VBoxLayout *layout=new Q3VBoxLayout(winPlotT);
     this->plotterT= new Plotter(winPlotT);
     this->plotterT->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterT);
@@ -331,7 +336,7 @@ void MainWindow::initPlotterCT()
 {
     winPlotCT = new QDialog(this);
     winPlotCT->setCaption(tr("Capacity(T):"));
-    QVBoxLayout *layout=new QVBoxLayout(winPlotCT);
+    Q3VBoxLayout *layout=new Q3VBoxLayout(winPlotCT);
     this->plotterCT= new Plotter(winPlotCT);
     this->plotterCT->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterCT);
@@ -340,7 +345,7 @@ void MainWindow::initPlotterCU()
 {
     winPlotCU = new QDialog(this);
     winPlotCU->setCaption(tr("Capacity(U):"));
-    QVBoxLayout *layout=new QVBoxLayout(winPlotCU);
+    Q3VBoxLayout *layout=new Q3VBoxLayout(winPlotCU);
     this->plotterCU= new Plotter(winPlotCU);
     this->plotterCU->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterCU);
@@ -353,11 +358,11 @@ void MainWindow::setModel()
 //    model = new PercolRect(this->rows,this->cols);
 }
 //--------------------------------------------------------------------------------------------
-MainWindow::MainWindow(QWidget *parent, const char *name, WFlags f)
+MainWindow::MainWindow(QWidget *parent, const char *name, Qt::WFlags f)
 : sigma0(0.5), sigmaU(1000.0), flgStop(false),
 T(0.5), Tmin(0.1),Tmax(5.2), dT(0.1), 
 U(400), Umin(200.), Umax(700), dU(25.), 
-r_c(0.0), Ex(0.5),  QMainWindow(parent,name,f),
+r_c(0.0), Ex(0.5),  Q3MainWindow(parent,name,f),
 rows(30), cols(50), numOfCurve(1), seed(0), model(0)
 {
     this->initMenuBar(); 
@@ -375,7 +380,7 @@ rows(30), cols(50), numOfCurve(1), seed(0), model(0)
 
 bool MainWindow::saveAs()
 {
-    QString fn = QFileDialog::getSaveFileName( QString::null, QString::null, this );
+    QString fn = Q3FileDialog::getSaveFileName( QString::null, QString::null, this );
     if ( !fn.isEmpty() ) {
         curFile = fn;
         return this->save();
@@ -408,9 +413,9 @@ bool MainWindow::save()
         }
     }
     //Saving the file!
-    fV.open(IO_WriteOnly|IO_Truncate);
+    fV.open(QIODevice::WriteOnly|QIODevice::Truncate);
 
-    QTextStream o(&fV);
+    Q3TextStream o(&fV);
     o << "Percolation model:\n";
     o << "Rows Cols Seed Conduct Temp Vg sigmaU Ex\n";
         QString s1;
@@ -468,9 +473,9 @@ bool MainWindow::save()
         }
     }
     //Saving the file!
-    fC.open(IO_WriteOnly|IO_Truncate);
+    fC.open(QIODevice::WriteOnly|QIODevice::Truncate);
 
-    QTextStream oC(&fC);
+    Q3TextStream oC(&fC);
     oC << "Current at centers of edges\n";
     for (int e = 0; e < model->nI(); ++e)
     {
@@ -527,8 +532,8 @@ void MainWindow::clear()
 {
     setMouseTracking( FALSE );
 
-    QCanvasItemList list = cv->canvas()->allItems();
-    QCanvasItemList::Iterator it = list.begin();
+    Q3CanvasItemList list = cv->canvas()->allItems();
+    Q3CanvasItemList::Iterator it = list.begin();
     for (; it != list.end(); ++it) {
 	if ( *it )
 	    delete *it;
@@ -538,18 +543,18 @@ void MainWindow::clear()
 
 class NodeItemFactory
 {
-    QCanvas *canvas;
+    Q3Canvas *canvas;
     ColorScale *cs;
     double scale;
     QPair<double,double> offset;
     int blob_size;
 public:
-    NodeItemFactory( QCanvas *_canvas, ColorScale *_cs, 
+    NodeItemFactory( Q3Canvas *_canvas, ColorScale *_cs, 
         double _scale, QPair<double,double> _offset ) 
         : canvas(_canvas), cs(_cs), scale(_scale), offset(_offset), blob_size(2) {}
-    QCanvasEllipse *newVnode(double v, QPair<double,double> xy)
+    Q3CanvasEllipse *newVnode(double v, QPair<double,double> xy)
     {
-        QCanvasEllipse *n = new QCanvasEllipse(2,2,canvas);
+        Q3CanvasEllipse *n = new Q3CanvasEllipse(2,2,canvas);
         n->setBrush(QBrush(cs->color(v)));
         n->setPen(QPen(Qt::black,2));
         n->setZ( 128 );
@@ -558,9 +563,9 @@ public:
         n->move( canvasx, canvasy );
         return n;
     }
-    QCanvasEllipse *newWnode(double v, QPair<double,double> xy)
+    Q3CanvasEllipse *newWnode(double v, QPair<double,double> xy)
     {
-        QCanvasEllipse *n = new QCanvasEllipse(blob_size,blob_size,canvas);
+        Q3CanvasEllipse *n = new Q3CanvasEllipse(blob_size,blob_size,canvas);
         n->setBrush(QBrush(cs->color(v)));
         n->setZ( 128 );
         double canvasx = (xy.first - offset.first) * scale;
@@ -573,17 +578,17 @@ public:
 
 class EdgeItemFactory
 {
-    QCanvas *canvas;
+    Q3Canvas *canvas;
     ColorScale2 *cs;
     double scale;
     QPair<double,double> offset;
 public:
-    EdgeItemFactory( QCanvas *_canvas, ColorScale2 *_cs,
+    EdgeItemFactory( Q3Canvas *_canvas, ColorScale2 *_cs,
         double _scale, QPair<double,double> _offset ) 
         : canvas(_canvas), cs(_cs), scale(_scale), offset(_offset) {}
-    QCanvasLine *newEdge(double c, QPair<double,double> xy0, QPair<double,double> xy1)
+    Q3CanvasLine *newEdge(double c, QPair<double,double> xy0, QPair<double,double> xy1)
     {
-        QCanvasLine *n = new QCanvasLine(canvas);
+        Q3CanvasLine *n = new Q3CanvasLine(canvas);
         if (c == 0)
             n->setPen(QPen(Qt::white));
         else if (c == CUTOFF_SIGMA)
@@ -604,7 +609,7 @@ public:
 void MainWindow::drawModelA()
 {
     clear();
-    QCanvas *pCanvas = cv->canvas();
+    Q3Canvas *pCanvas = cv->canvas();
 
     // Set view port
     const double factor = 0.95;
@@ -656,7 +661,7 @@ void MainWindow::drawModelA()
     {
         double V = model->V[v];
         QPair<double,double> xy = model->xy(v);
-        QCanvasEllipse *n = vfactory.newVnode(V, xy);
+        Q3CanvasEllipse *n = vfactory.newVnode(V, xy);
         n->show();
     }
 
@@ -665,7 +670,7 @@ void MainWindow::drawModelA()
     {
         double W = model->W[w];
         QPair<double,double> xy = model->xy(v+w);
-        QCanvasEllipse *n = vfactory.newWnode(W, xy);
+        Q3CanvasEllipse *n = vfactory.newWnode(W, xy);
         n->show();
     }
 
@@ -677,7 +682,7 @@ void MainWindow::drawModelA()
 //        q=(model->I[e])/(model->Sigma[e]);
         q=(model->I[e])*(model->I[e])/(model->Sigma[e]);
         if(q<0.00000000001) q=0.;
-        QCanvasLine *n = ifactory.newEdge( q , xy0, xy1 );
+        Q3CanvasLine *n = ifactory.newEdge( q , xy0, xy1 );
         n->show();
     }
     setMouseTracking( TRUE );
@@ -686,7 +691,7 @@ void MainWindow::drawModelA()
 void MainWindow::drawModelI()
 {//   this->selectSigma(QComboBox::currentItem());
     clear();
-    QCanvas *pCanvas = cv->canvas();
+    Q3Canvas *pCanvas = cv->canvas();
 
     // Set view port
     const double factor = 0.95;
@@ -741,7 +746,7 @@ void MainWindow::drawModelI()
     {
         double V = model->V[v];
         QPair<double,double> xy = model->xy(v);
-        QCanvasEllipse *n = vfactory.newVnode(V, xy);
+        Q3CanvasEllipse *n = vfactory.newVnode(V, xy);
         n->show();
     }
 
@@ -751,7 +756,7 @@ void MainWindow::drawModelI()
     {
         double W = model->W[w];
         QPair<double,double> xy = model->xy(v+w);
-        QCanvasEllipse *n = vfactory.newWnode(W, xy);
+        Q3CanvasEllipse *n = vfactory.newWnode(W, xy);
         n->show();
     }
 //#else   
@@ -789,7 +794,7 @@ void MainWindow::drawModelI()
         QPair<double,double> xy1 = model->xy(ends.second);
         q=fabs(model->I[e]);
         if(q<0.00000000001) q=0.;
-        QCanvasLine *n = ifactory.newEdge( q , xy0, xy1 );
+        Q3CanvasLine *n = ifactory.newEdge( q , xy0, xy1 );
         n->show();
     }
     setMouseTracking( TRUE );
@@ -799,7 +804,7 @@ void MainWindow::drawModelR()
 
 {  
     clear();
-    QCanvas *pCanvas = cv->canvas();
+    Q3Canvas *pCanvas = cv->canvas();
 
     // Set view port
     const double factor = 0.95;
@@ -850,7 +855,7 @@ void MainWindow::drawModelR()
     {
         double V = model->V[v];
         QPair<double,double> xy = model->xy(v);
-        QCanvasEllipse *n = vfactory.newVnode(V, xy);
+        Q3CanvasEllipse *n = vfactory.newVnode(V, xy);
         n->show();
     }
 
@@ -859,7 +864,7 @@ void MainWindow::drawModelR()
     {
         double W = model->W[w];
         QPair<double,double> xy = model->xy(v+w);
-        QCanvasEllipse *n = vfactory.newWnode(W, xy);
+        Q3CanvasEllipse *n = vfactory.newWnode(W, xy);
         n->show();
     }
 
@@ -868,7 +873,7 @@ void MainWindow::drawModelR()
         QPair<int,int> ends = model->ends(e);
         QPair<double,double> xy0 = model->xy(ends.first);
         QPair<double,double> xy1 = model->xy(ends.second);
-        QCanvasLine *n = ifactory.newEdge( model->Sigma[e], xy0, xy1 );
+        Q3CanvasLine *n = ifactory.newEdge( model->Sigma[e], xy0, xy1 );
         n->show();
      }
     setMouseTracking( TRUE );
@@ -949,7 +954,7 @@ MainWindow::setCapacity()
     int nw = model->nW(); // number of undefined nodes
     int ni = model->nI(); // number of current links
     double imax;
-    QMemArray<double> t( nv+nw );
+    Q3MemArray<double> t( nv+nw );
     int nt;
         t.fill(0.0);
         for (int i = 0; i < ni; ++i)
@@ -1260,7 +1265,7 @@ double MainWindow::singleSigma(double r, double r1)
 
 void MainWindow::randomizeSigma_2()
 {   double x1,x2;
-   QMemArray<double> t( model->nI() );
+   Q3MemArray<double> t( model->nI() );
 //    static int seed;
     VSLStreamStatePtr stream;
 //    vslNewStream( &stream, VSL_BRNG_MCG31, 0);
@@ -1369,7 +1374,7 @@ void MainWindow::resizeEvent( QResizeEvent *e )
 {
     QSize nsz = e->size(); 
     QSize osz = e->oldSize();
-    QCanvas *c = cv->canvas();
+    Q3Canvas *c = cv->canvas();
 
     c->resize( c->width()+nsz.width()-osz.width(),
         c->height()+nsz.height()-osz.height() );

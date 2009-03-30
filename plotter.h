@@ -3,6 +3,12 @@
 
 #include <qpixmap.h>
 #include <qwidget.h>
+//Added by qt3to4:
+#include <QResizeEvent>
+#include <QWheelEvent>
+#include <QMouseEvent>
+#include <QKeyEvent>
+#include <QPaintEvent>
 #include <vector>
 
 class QToolButton;
@@ -15,7 +21,7 @@ class Plotter : public QWidget
     Q_OBJECT
 public:
     Plotter(QWidget *parent = 0, const char *name=0,
-        WFlags flags=0);
+        Qt::WFlags flags=0);
     void setPlotSettings(const PlotSettings &settings);
     void setCurveData(int id, const CurveData &data);
     void clearCurve(int id);

@@ -1,15 +1,25 @@
 #include <qpainter.h>
 #include <qstyle.h>
 #include <qtoolbutton.h>
+//Added by qt3to4:
+#include <Q3TextStream>
+#include <Q3PointArray>
+#include <QWheelEvent>
+#include <QPaintEvent>
+#include <QResizeEvent>
+#include <QPixmap>
+#include <QMouseEvent>
+#include <QKeyEvent>
+#include <Q3MemArray>
 #include <cmath>
 #include <qfile.h>
-#include <qfiledialog.h>
+#include <q3filedialog.h>
 using namespace std;
 #include "plotter.h"
 #include <qmessagebox.h> 
 
-Plotter::Plotter(QWidget *parent, const char *name, WFlags flags)
-: QWidget(parent, name, flags | WNoAutoErase)
+Plotter::Plotter(QWidget *parent, const char *name, Qt::WFlags flags)
+: QWidget(parent, name, flags | Qt::WNoAutoErase)
 {
     setBackgroundMode(PaletteDark);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -140,7 +150,7 @@ QSize Plotter::sizeHint() const
 }
 void Plotter::paintEvent(QPaintEvent *event)
 {
-    QMemArray<QRect> rects = event->region().rects();
+    Q3MemArray<QRect> rects = event->region().rects();
     for(int i=0; i<(int)rects.size();++i)
         bitBlt(this, rects[i].topLeft(), &pixmap, rects[i]);
     QPainter painter(this);
@@ -304,7 +314,7 @@ void Plotter::drawGrid(QPainter *painter)
 void Plotter::drawCurves(QPainter *painter)
 {
     static const QColor colorForIds[6] = {
-        red, green, blue, cyan, magenta, yellow
+        Qt::red, Qt::green, Qt::blue, Qt::cyan, Qt::magenta, Qt::yellow
     };
     PlotSettings settings = zoomStack[curZoom];
     QRect rect(Margin, Margin, 
@@ -318,7 +328,7 @@ void Plotter::drawCurves(QPainter *painter)
         const CurveData &data = it->second;
         int numPoints=0;
         int maxPoints = data.size()/2;
-        QPointArray points(maxPoints);
+        Q3PointArray points(maxPoints);
         for (int i=0; i<maxPoints; ++i){
             double dx = data[2*i]-settings.minX;
             double dy = data[2*i+1]-settings.minY;
@@ -378,7 +388,7 @@ void PlotSettings::adjustAxis(double &min, double &max, int &numTicks)
 }
 bool Plotter::savePlotAs()
 {
-    QString fn = QFileDialog::getSaveFileName( QString::null, QString::null, this );
+    QString fn = Q3FileDialog::getSaveFileName( QString::null, QString::null, this );
     if ( !fn.isEmpty() ) {
         curFileCurve = fn;
         return this->savePlot();
@@ -409,9 +419,9 @@ bool Plotter::savePlot()
         }
     }
     //Saving the file!
-    f.open(IO_WriteOnly|IO_Truncate);
+    f.open(QIODevice::WriteOnly|QIODevice::Truncate);
 
-    QTextStream o(&f);
+    Q3TextStream o(&f);
      o << "Sigma(T)\n";
 
     map<int, CurveData>::const_iterator it = curveMap.begin();
@@ -425,7 +435,7 @@ bool Plotter::savePlot()
         const CurveData &data = it->second;
         int numPoints=0;
         int maxPoints = data.size()/2;
-        QPointArray points(maxPoints);
+        Q3PointArray points(maxPoints);
         for (int i=0; i<maxPoints; ++i){
             double x = data[2*i];
             double y = data[2*i+1];

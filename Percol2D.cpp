@@ -4,8 +4,10 @@
 #include <qmessagebox.h>
 #include <qstring.h>
 #include <qfile.h>
+//Added by qt3to4:
+#include <Q3MemArray>
 #include <cmath>
-#include <qtextstream.h>
+#include <q3textstream.h>
 
 // Find maximum value in a container
 template<typename T>
@@ -36,7 +38,7 @@ void Percol2D::compute_general()
     int ni = this->nI(); // number of current links
 
     // Build LHS matrix = S_W^T SIGMA S_W
-    QMemArray<double> lhs( nw*nw );
+    Q3MemArray<double> lhs( nw*nw );
     lhs.fill(0.0);
 
     for (int i = 0; i < ni; ++i)
@@ -68,7 +70,7 @@ void Percol2D::compute_general()
     }
 
     // Build temp vector = SIGMA S_V V
-    QMemArray<double> t( ni );
+    Q3MemArray<double> t( ni );
     t.fill(0.0);
     for (int i = 0; i < ni; ++i)
     {
@@ -80,7 +82,7 @@ void Percol2D::compute_general()
     }
 
     // Build right hand side: rhs = -S(...) SIGMA S_V V
-    QMemArray<double> rhs( nw );
+    Q3MemArray<double> rhs( nw );
     rhs.fill(0.0);
 
     for (int w = 0; w < nw; ++w)
@@ -93,7 +95,7 @@ void Percol2D::compute_general()
     }
 
     int ONE = 1;
-    QMemArray<int> ipiv( nw );
+    Q3MemArray<int> ipiv( nw );
 
     // Before factoring with dgetrf we compute anorm, used later to estimate rcond 
 #if WANT_1NORM_RCOND
@@ -137,8 +139,8 @@ void Percol2D::compute_general()
             exit(1);
         }
     }
-    QMemArray<double> wrk( 4*nw );
-    QMemArray<int> iwk( nw );
+    Q3MemArray<double> wrk( 4*nw );
+    Q3MemArray<int> iwk( nw );
 #if WANT_1NORM_RCOND
     dgecon("1-Norm",&nw,lhs.data(),&nw,&anorm_1,&this->rcond,wrk.data(),iwk.data(),&info);
 #else
@@ -209,7 +211,7 @@ void Percol2D::computeOld()
         }
     }
     // Now determine kl and ku - numbers of sub- and super- diagonals.
-    QMemArray<int> tkl(nw), tku(nw);
+    Q3MemArray<int> tkl(nw), tku(nw);
     tkl.fill(0);
     tku.fill(0);
     for (RC_D_map::const_iterator e = nonz.constBegin(); e != nonz.constEnd(); ++e)
@@ -224,7 +226,7 @@ void Percol2D::computeOld()
 
     // Now prepare the lhs matrix with banded storage
     int lhs_rows = kl + ku + 1 + kl; // last kl is for LU factorization with dgbtrf
-    QMemArray<double> lhs( lhs_rows * nw );
+    Q3MemArray<double> lhs( lhs_rows * nw );
     lhs.fill(0);
     for (RC_D_map::const_iterator e = nonz.constBegin(); e != nonz.constEnd(); ++e)
     {
@@ -237,7 +239,7 @@ void Percol2D::computeOld()
     }
 
     // Build temp vector = SIGMA S_V V
-    QMemArray<double> t( ni );
+    Q3MemArray<double> t( ni );
     t.fill(0.0);
     for (int i = 0; i < ni; ++i)
     {
@@ -249,7 +251,7 @@ void Percol2D::computeOld()
     }
 
     // Build right hand side: rhs = -S(...) SIGMA S_V V
-    QMemArray<double> rhs( nw );
+    Q3MemArray<double> rhs( nw );
     rhs.fill(0.0);
 
     for (int w = 0; w < nw; ++w)
@@ -262,7 +264,7 @@ void Percol2D::computeOld()
     }
 
     int ONE = 1;
-    QMemArray<int> ipiv( nw );
+    Q3MemArray<int> ipiv( nw );
 
     // Before factoring with dgbtrf we compute anorm, used later to estimate rcond
 //#define WANT_1NORM_RCOND 1
@@ -291,7 +293,7 @@ void Percol2D::computeOld()
 #endif
 
     int info;
-    QMemArray<double> lhs_saved = lhs.copy();
+    Q3MemArray<double> lhs_saved = lhs.copy();
     dgbtrf(&nw,&nw,&kl,&ku, lhs.data(),&lhs_rows,ipiv.data(),&info);
 
     if (info > 0)
@@ -311,15 +313,15 @@ void Percol2D::computeOld()
     if (0) 
     {
         QFile f("tmp.txt");
-        f.open(IO_WriteOnly);
-        QTextStream ts(&f);
+        f.open(QIODevice::WriteOnly);
+        Q3TextStream ts(&f);
         for (int i=0; i < nw; ++i)
             ts << i << " " << ipiv[i] << "\n";
         f.close();
     }
 
-    QMemArray<double> wrk( 3*nw );
-    QMemArray<int> iwk( nw );
+    Q3MemArray<double> wrk( 3*nw );
+    Q3MemArray<int> iwk( nw );
 #if WANT_1NORM_RCOND
     dgbcon("1-Norm",&nw,&kl,&ku,lhs.data(),&lhs_rows,ipiv.data(),&anorm_1,&this->rcond,
            wrk.data(), iwk.data(), &info);
@@ -392,7 +394,7 @@ void Percol2D::compute()
         }
     }
     // Now determine kl and ku - numbers of sub- and super- diagonals.
-    QMemArray<int> tkl(nw), tku(nw);
+    Q3MemArray<int> tkl(nw), tku(nw);
     tkl.fill(0);
     tku.fill(0);
     for (RC_D_map::const_iterator e = nonz.constBegin(); e != nonz.constEnd(); ++e)
@@ -407,7 +409,7 @@ void Percol2D::compute()
 
     // Now prepare the lhs matrix with banded storage
     int lhs_rows = /*kl +*/ ku + 1 + kl; // last kl is for LU factorization with dgbtrf
-    QMemArray<double> lhs( lhs_rows * nw );
+    Q3MemArray<double> lhs( lhs_rows * nw );
     lhs.fill(0);
     for (RC_D_map::const_iterator e = nonz.constBegin(); e != nonz.constEnd(); ++e)
     {
@@ -420,7 +422,7 @@ void Percol2D::compute()
     }
 
     // Build temp vector = SIGMA S_V V
-    QMemArray<double> t( ni );
+    Q3MemArray<double> t( ni );
     t.fill(0.0);
     for (int i = 0; i < ni; ++i)
     {
@@ -432,7 +434,7 @@ void Percol2D::compute()
     }
 
     // Build right hand side: rhs = -S(...) SIGMA S_V V
-    QMemArray<double> rhs( nw );
+    Q3MemArray<double> rhs( nw );
     rhs.fill(0.0);
 
     for (int w = 0; w < nw; ++w)
@@ -445,16 +447,16 @@ void Percol2D::compute()
     }
 
     int ONE = 1;
-    QMemArray<int> ipiv( nw );
+    Q3MemArray<int> ipiv( nw );
     int info;
-    QMemArray<double> lhs_saved = lhs.copy();
-    QMemArray<double> wrk( 3*nw );
-    QMemArray<int> iwk( nw );
-    QMemArray<double> dr( nw );
-    QMemArray<double> dc( nw );
+    Q3MemArray<double> lhs_saved = lhs.copy();
+    Q3MemArray<double> wrk( 3*nw );
+    Q3MemArray<int> iwk( nw );
+    Q3MemArray<double> dr( nw );
+    Q3MemArray<double> dc( nw );
     char equed;
     int afb_rows = 1 + kl + ku + kl;
-    QMemArray<double> afb( afb_rows*nw );
+    Q3MemArray<double> afb( afb_rows*nw );
     dgbsvx("Equilibrate","No transpose",&nw,&kl,&ku,&ONE,
         lhs_saved.data(),&lhs_rows,
         afb.data(), &afb_rows, 
@@ -510,8 +512,8 @@ void Percol2D::compute()
 
     for (int w = 0; w < nw; ++w)
     {
-        QMemArray<int> from = this->from(nv+w);
-        QMemArray<int> to = this->to(nv+w);
+        Q3MemArray<int> from = this->from(nv+w);
+        Q3MemArray<int> to = this->to(nv+w);
         double total_i = 0;
         for (int i = 0; i < from.size(); ++i)
         {
@@ -614,7 +616,7 @@ QPair<int,int> PercolRect::ends(int i) const
     }
 }
 
-QMemArray<int> PercolRect::from(int v) const
+Q3MemArray<int> PercolRect::from(int v) const
 {
     RectHelper h(rows,cols);
     QPair<int,int> rc = h.rc(v);
@@ -622,7 +624,7 @@ QMemArray<int> PercolRect::from(int v) const
     int c = rc.second;
     int a, b;
 
-    QMemArray<int> res;
+    Q3MemArray<int> res;
 
     if (r < rows-1 && c < cols-1)
     {
@@ -647,7 +649,7 @@ QMemArray<int> PercolRect::from(int v) const
     return res;
 }
 
-QMemArray<int> PercolRect::to(int v) const
+Q3MemArray<int> PercolRect::to(int v) const
 {
     RectHelper h(rows,cols);
     QPair<int,int> rc = h.rc(v);
@@ -655,7 +657,7 @@ QMemArray<int> PercolRect::to(int v) const
     int c = rc.second;
     int a, b;
 
-    QMemArray<int> res;
+    Q3MemArray<int> res;
 
     if (r > 0 && c > 0)
     {
