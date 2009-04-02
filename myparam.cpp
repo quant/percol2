@@ -1,16 +1,29 @@
 #include <q3vbox.h>
 #include <qlabel.h>
 #include "myparam.h"
+#include <QtGui/QHBoxLayout>
+#include <QtGui/QLabel>
+#include <QtGui/QLineEdit>
 
 void
 MyParamD::setDisplay(const QString& label, QWidget *parent)
 {
-    if (ledit) delete ledit;
-    Q3HBox *hbox = new Q3HBox(parent);
-    new QLabel(label,hbox);
-    this->ledit = new QLineEdit(hbox);
+    if (this->ledit) delete this->ledit;
+    QHBoxLayout *hl = new QHBoxLayout(parent);
+    hl->addWidget(new QLabel(label));
+    hl->addWidget(this->ledit = new QLineEdit);
     connect(ledit,SIGNAL(returnPressed()),this,SLOT(textToValue()));
-//    connect(this,SIGNAL(valueChanged()),this,SLOT(updateDisplay()));
+    updateDisplay();
+}
+
+void
+MyParamD::setDisplay(const QString& label, QLayout *parent)
+{
+    if (this->ledit) delete this->ledit;
+    QHBoxLayout *hl = new QHBoxLayout(parent);
+    hl->addWidget(new QLabel(label));
+    hl->addWidget(this->ledit = new QLineEdit);
+    connect(ledit,SIGNAL(returnPressed()),this,SLOT(textToValue()));
     updateDisplay();
 }
 
@@ -35,12 +48,23 @@ void MyParamD::updateDisplay()
 
 //--------------------------------------------------------------------
 void
-MyParamI::setDisplay(const QString& label, QWidget *parent)
+MyParamI::setDisplay(const QString& label, QLayout *parent)
 {
     if (ledit) delete ledit;
-    Q3HBox *hbox = new Q3HBox(parent);
-    new QLabel(label,hbox);
-    this->ledit = new QLineEdit(hbox);
+    QHBoxLayout *hl = new QHBoxLayout(parent);
+    hl->addWidget(new QLabel(label));
+    hl->addWidget(this->ledit = new QLineEdit);
+    connect(ledit,SIGNAL(returnPressed()),this,SLOT(textToValue()));
+//    connect(this,SIGNAL(valueChanged()),this,SLOT(updateDisplay()));
+    updateDisplay();
+}
+void
+MyParamI::setDisplay(const QString& label, QWidget *parent)
+{
+    if (this->ledit) delete this->ledit;
+    QHBoxLayout *hl = new QHBoxLayout(parent);
+    hl->addWidget(new QLabel(label));
+    hl->addWidget(this->ledit = new QLineEdit);
     connect(ledit,SIGNAL(returnPressed()),this,SLOT(textToValue()));
 //    connect(this,SIGNAL(valueChanged()),this,SLOT(updateDisplay()));
     updateDisplay();

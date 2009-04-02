@@ -1,8 +1,7 @@
 #ifndef myparam_h_included
 #define myparam_h_included
 
-#include <qwidget.h>
-#include <qlineedit.h>
+#include <QtGui>
 
 class MyParamD : public QObject
 {
@@ -14,6 +13,7 @@ public:
     double& operator+=(double d) { return v += d; }
     operator double() const { return v; }
     void setDisplay(const QString& label, QWidget *parent);
+    void setDisplay(const QString& label, QLayout *parent);
     ~MyParamD() { if (ledit) delete ledit; }
 
 public slots:
@@ -37,6 +37,7 @@ public:
     int& operator+=(int d) { return v += d; }
     operator int() const { return v; }
     void setDisplay(const QString& label, QWidget *parent);
+    void setDisplay(const QString& label, QLayout *parent);
     ~MyParamI() { if (ledit) delete ledit; }
 
 public slots:

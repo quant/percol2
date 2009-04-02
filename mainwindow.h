@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H_INCLUDED
 #define MAINWINDOW_H_INCLUDED
-//#include <qpushbutton.h> 
+#include <QtGui>
+
 #include <q3mainwindow.h>
 #include <q3canvas.h>
 #include <qcombobox.h> 
@@ -10,19 +11,12 @@
 #include <qlabel.h>
 //#include <qlineedit.h>
 #include <qevent.h>
-//#include <qtabwidget.h>
-//#include <qgroupbox.h> 
 #include <q3buttongroup.h> 
-//#include <qradiobutton.h> 
-//#include <qgrid.h>
-//#include <qvbox.h>
-//#include <qdockwindow.h> 
-//#include <qworkspace.h> 
-//#include <qpopupmenu.h>
 #include <qdialog.h> 
 //Added by qt3to4:
 #include <QResizeEvent>
 #include <QMouseEvent>
+#include <QAction>
 
 #include "percol2d.h"
 #include "plotter.h"
@@ -43,12 +37,14 @@ private:
 
 //---------------------------------------------------------------------
 // Define main window 
-class MainWindow : public Q3MainWindow
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    MainWindow(QWidget* parent=0, const char* name=0, Qt::WFlags f=0);
+    MainWindow(QWidget* parent=0, Qt::WindowFlags f=0);
     ~MainWindow(){ clear(); }
+//    MainWindow(QWidget* parent=0, const char* name=0, Qt::WFlags f=0);
+//    ~MainWindow(){ clear(); }
     void setModel();
 
 public slots:
@@ -102,18 +98,11 @@ private:
 
     QFont myfont;
     Q3CanvasView *cv;
-//    QGroupBox *oneResistorBox;
-//    QPopupMenu *options;
     Percol2D *model;
-//    QComboBox *comboSigmaType;
-      Q3ButtonGroup *typeResistor;
-//    QLineEdit *editRecordCond, *editSigmaMin;
+    QButtonGroup *typeResistor;
     QString curFile;
-//    QLabel *locationLabel;
-//    QLabel *modLabel;
-//    QLabel *result, *lbresult, *lbdouble;
 
-    MyParamD T, U, Tmin, Tmax, dT, Umin, Umax, dU, Ex, sigma0;
+    MyParamD T, U, Tmin, Tmax, dT, Umin, Umax, dU, Ex, rand;
     MyParamI cols, rows, seed; 
     MyParamD sigmaU, sigmaMin, r_c, capacity;
     int numOfCurve;
@@ -132,6 +121,8 @@ private:
     QLabel *dispFerr; // Display of ferr
     QLabel *dispBerr; // Display of berr
     QLabel *dispDeltaI; // Display of deltaI
+    QAction *exitAction, *saveAction, *chooseFontAction;
+    QMenu *file;
 };
 
 #endif /*MAINWINDOW_H_INCLUDED*/

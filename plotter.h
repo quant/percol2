@@ -1,9 +1,10 @@
 #ifndef PLOTTER_H_INCLUDED
 #define PLOTTER_H_INCLUDED
 
-#include <qpixmap.h>
-#include <qwidget.h>
+//#include <qpixmap.h>
+//#include <qwidget.h>
 //Added by qt3to4:
+#include <QtGui>
 #include <QResizeEvent>
 #include <QWheelEvent>
 #include <QMouseEvent>
@@ -20,8 +21,9 @@ class Plotter : public QWidget
 {
     Q_OBJECT
 public:
-    Plotter(QWidget *parent = 0, const char *name=0,
-        Qt::WFlags flags=0);
+    Plotter(QWidget *parent = 0, Qt::WindowFlags flags=0);
+//old    Plotter(QWidget *parent = 0, const char *name=0,
+//old        Qt::WFlags flags=0);
     void setPlotSettings(const PlotSettings &settings);
     void setCurveData(int id, const CurveData &data);
     void clearCurve(int id);

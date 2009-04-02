@@ -1,44 +1,37 @@
-#include <qpainter.h>
-#include <qstyle.h>
-#include <qtoolbutton.h>
+//#include <qpainter.h>
+//#include <qstyle.h>
+//#include <qtoolbutton.h>
 //Added by qt3to4:
-#include <Q3TextStream>
-#include <Q3PointArray>
-#include <QWheelEvent>
-#include <QPaintEvent>
-#include <QResizeEvent>
-#include <QPixmap>
-#include <QMouseEvent>
-#include <QKeyEvent>
-#include <Q3MemArray>
-#include <cmath>
-#include <qfile.h>
-#include <q3filedialog.h>
-using namespace std;
+//#include <Q3TextStream>
+//#include <Q3PointArray>
 #include "plotter.h"
-#include <qmessagebox.h> 
-#include <QtGui>
+#include <cmath>
+#include <map>
+using namespace std;
 
-Plotter::Plotter(QWidget *parent, const char *name, Qt::WFlags flags)
-: QWidget(parent, name, flags | Qt::WNoAutoErase)
+//Plotter::Plotter(QWidget *parent, const char *name, Qt::WFlags flags)
+//: QWidget(parent, name, flags | Qt::WNoAutoErase)
+Plotter::Plotter(QWidget *parent, Qt::WindowFlags flags)
+: QWidget(parent, flags)
 {
-    setBackgroundRole(QPalette::Dark);
+    setBackgroundRole(QPalette::Text);
+    setAutoFillBackground ( true );
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setFocusPolicy(Qt::StrongFocus);
     rubberBandIsShown = false;
 
     zoomInButton = new QToolButton(this);
-    zoomInButton->setIconSet(QIcon("images/zoomin.png"));
+    zoomInButton->setIcon(QIcon("images/zoomin.png"));
     zoomInButton->adjustSize();
     connect(zoomInButton, SIGNAL(clicked()), this, SLOT(zoomIn()));
 
     zoomOutButton = new QToolButton(this);
-    zoomOutButton->setIconSet(QIcon("images/zoomout.png"));
+    zoomOutButton->setIcon(QIcon("images/zoomout.png"));
     zoomOutButton->adjustSize();
     connect(zoomOutButton, SIGNAL(clicked()), this, SLOT(zoomOut()));
 
     zoomAllButton = new QToolButton(this);
-    zoomAllButton->setIconSet(QIcon("images/zoomall.png"));
+    zoomAllButton->setIcon(QIcon("images/zoomall.png"));
     zoomAllButton->adjustSize();
     zoomAllButton->show();
     connect(zoomAllButton, SIGNAL(clicked()), this, SLOT(zoomAll()));
@@ -151,10 +144,13 @@ QSize Plotter::sizeHint() const
 }
 void Plotter::paintEvent(QPaintEvent *event)
 {
-    Q3MemArray<QRect> rects = event->region().rects();
-    for(int i=0; i<(int)rects.size();++i)
-        bitBlt(this, rects[i].topLeft(), &pixmap, rects[i]);
+//old//    Q3MemArray<QRect> rects = event->region().rects();
+    QVector<QRect> rects = event->region().rects();
     QPainter painter(this);
+   for(int i=0; i<(int)rects.size();++i)
+//        bitBlt(this, rects[i].topLeft(), &pixmap, rects[i]);
+        painter.drawImage(rects[i].topLeft(), pixmap.toImage(), rects[i]);
+//    QPainter painter(this);
     if(rubberBandIsShown){
         painter.setPen(colorGroup().light());
         painter.drawRect(rubberBandRect.normalize());
@@ -205,6 +201,8 @@ void Plotter::mouseReleaseEvent(QMouseEvent *event)
         if(rect.width()<4||rect.height()<4)
             return;
         rect.moveBy(-Margin, -Margin);
+//Qt4//        rect.translate(-Margin, -Margin);
+
         PlotSettings prevSettings = zoomStack[curZoom];
         PlotSettings settings;
         double dx=prevSettings.spanX()/(width()-2*Margin);
@@ -274,7 +272,8 @@ void Plotter::updateRubberBandRegion()
 }
 void Plotter::refreshPixmap()
 {
-    pixmap.resize(size());
+//Qt3    pixmap.resize(size());
+    pixmap = QPixmap(size());
     pixmap.fill(this,0,0);
     QPainter painter(&pixmap);
     drawGrid(&painter);
@@ -331,7 +330,10 @@ void Plotter::drawCurves(QPainter *painter)
         const CurveData &data = it->second;
         int numPoints=0;
         int maxPoints = data.size()/2;
-        Q3PointArray points(maxPoints);
+        QPolygon points(maxPoints);
+//        Q3PointArray points(maxPoints);
+
+
         for (int i=0; i<maxPoints; ++i){
             double dx = data[2*i]-settings.minX;
             double dy = data[2*i+1]-settings.minY;
@@ -391,7 +393,8 @@ void PlotSettings::adjustAxis(double &min, double &max, int &numTicks)
 }
 bool Plotter::savePlotAs()
 {
-    QString fn = Q3FileDialog::getSaveFileName( QString::null, QString::null, this );
+    //QString fn = Q3FileDialog::getSaveFileName( QString::null, QString::null, this );
+    QString fn = QFileDialog::getSaveFileName(this);
     if ( !fn.isEmpty() ) 
     {
         curFileCurve = fn;
@@ -425,8 +428,8 @@ bool Plotter::savePlot()
     //Saving the file!
     f.open(QIODevice::WriteOnly|QIODevice::Truncate);
 
-    Q3TextStream o(&f);
-     o << "Sigma(T)\n";
+    QTextStream o(&f);
+    o << "Sigma(T)\n";
 
     map<int, CurveData>::const_iterator it = curveMap.begin();
     while (it !=curveMap.end())
@@ -439,7 +442,8 @@ bool Plotter::savePlot()
         const CurveData &data = it->second;
 //        int numPoints=0;
         int maxPoints = data.size()/2;
-        Q3PointArray points(maxPoints);
+        QPolygon points(maxPoints);
+//        Q3PointArray points(maxPoints);
         for (int i=0; i<maxPoints; ++i){
             double x = data[2*i];
             double y = data[2*i+1];

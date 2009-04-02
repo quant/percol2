@@ -30,6 +30,17 @@
 #include <q3grid.h>
 #include <qpushbutton.h>
 #include "myparam.h"
+#include <QtCore/QVariant>
+#include <QtGui/QAction>
+#include <QtGui/QApplication>
+#include <QtGui/QButtonGroup>
+#include <QtGui/QDockWidget>
+#include <QtGui/QGroupBox>
+#include <QtGui/QHBoxLayout>
+#include <QtGui/QPushButton>
+#include <QtGui/QVBoxLayout>
+#include <QtGui/QWidget>
+
 
 const double CUTOFF_SIGMA = 1e-10;
 const double EF=15;//20.;//8.;//meV
@@ -123,23 +134,31 @@ public:
 
 void MainWindow::initMenuBar()
 {
-    QMenuBar* menu = menuBar(); 
+//    QMenuBar* menu = menuBar();
+    exitAction = new QAction("Exit", this);
+    saveAction = new QAction("Save As", this);
+    chooseFontAction = new QAction("Choose Font", this);
+    saveAction->setStatusTip(tr("Сохранить в файле напряжения, токи и параметры расчета"));
+    saveAction->setShortcut(tr("Ctrl+S"));
+    exitAction->setShortcut(tr("Ctrl+Q"));
+    chooseFontAction->setShortcut(tr("Ctrl+F"));
+    connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
+    connect(chooseFontAction, SIGNAL(clicked()), this, SLOT(chooseFont()));
+    connect(saveAction, SIGNAL(activated()), this, SLOT(saveAs()));
+    
 
-    Q3PopupMenu* file = new Q3PopupMenu( menu );
-    file->insertItem("&Save As", this, SLOT(saveAs()), Qt::CTRL + Qt::Key_S);
-    file->insertSeparator();
-    file->insertItem("Choose Font", this, SLOT(chooseFont()), Qt::ALT + Qt::Key_F);
-    file->insertSeparator();
-    file->insertItem("E&xit", qApp, SLOT(quit()), Qt::CTRL + Qt::Key_Q);
-    file->insertSeparator();
-    menu->insertItem("&Menu", file);
+    QMenu* file = menuBar()->addMenu("Menu"); 
+    file->addAction(saveAction);  
+    file->addAction(chooseFontAction);  
+    file->addSeparator();
+    file->addAction(exitAction);  
 
-
-    menu->insertSeparator();
+/*    menu->insertSeparator();
 
     Q3PopupMenu* help = new Q3PopupMenu( menu );
     help->insertItem("&About", this, SLOT(help()), Qt::Key_F1);
     menu->insertItem(tr("Помощь"),help);
+    */
 }
 
 void MainWindow::chooseFont()
@@ -177,43 +196,259 @@ void MainWindow::initStatusBar()
 }
 
 
-
 void MainWindow::initControlDockWindow()
 {
-    Q3ToolBar *control = new Q3ToolBar(this);
-    control->setLabel(tr("Control Panel"));
-//    control->setOrientation(Qt::Vertical);
+/*      QDockWidget *myDockWidget = new QDockWidget(tr("Control Panel"),this);
+      myDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea); 
+      addDockWidget(Qt::RightDockWidgetArea, myDockWidget);
+     QWidget *dockWidgetContents = new QWidget();
+    QHBoxLayout *horizontalLayout_3 = new QHBoxLayout(dockWidgetContents);
+    QGroupBox *groupBox_2 = new QGroupBox(dockWidgetContents);
+    QVBoxLayout *verticalLayout_4 = new QVBoxLayout(groupBox_2);
+    QGroupBox *groupBox_4 = new QGroupBox(groupBox_2);
+    verticalLayout_4->addWidget(groupBox_4);
+    QGroupBox *groupBox_5 = new QGroupBox(groupBox_2);
+    verticalLayout_4->addWidget(groupBox_5);
+    horizontalLayout_3->addWidget(groupBox_2);
+    QGroupBox *groupBox = new QGroupBox(dockWidgetContents);
+    QVBoxLayout *verticalLayout_3 = new QVBoxLayout(groupBox);
+    QHBoxLayout *horizontalLayout = new QHBoxLayout();
+    QVBoxLayout *verticalLayout_2 = new QVBoxLayout();
+    QPushButton *pushButton_5 = new QPushButton(groupBox);
+    verticalLayout_2->addWidget(pushButton_5);
+    QPushButton *pushButton_6 = new QPushButton(groupBox);
+    verticalLayout_2->addWidget(pushButton_6);
+    horizontalLayout->addLayout(verticalLayout_2);
+    QVBoxLayout *verticalLayout = new QVBoxLayout();
+    QPushButton *pushButton_3 = new QPushButton(groupBox);
+    verticalLayout->addWidget(pushButton_3);
+    QPushButton *pushButton_4 = new QPushButton(groupBox);
+    verticalLayout->addWidget(pushButton_4);
+    horizontalLayout->addLayout(verticalLayout);
+    verticalLayout_3->addLayout(horizontalLayout);
+    QGroupBox *groupBox_3 = new QGroupBox(groupBox);
+    QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    sizePolicy.setHorizontalStretch(0);
+    sizePolicy.setVerticalStretch(0);
+    sizePolicy.setHeightForWidth(groupBox_3->sizePolicy().hasHeightForWidth());
+    groupBox_3->setSizePolicy(sizePolicy);
+    QHBoxLayout *horizontalLayout_2 = new QHBoxLayout(groupBox_3);
+    QPushButton *pushButton = new QPushButton(groupBox_3);
+    horizontalLayout_2->addWidget(pushButton);
+    QPushButton *pushButton_2 = new QPushButton(groupBox_3);
+    horizontalLayout_2->addWidget(pushButton_2);
+    verticalLayout_3->addWidget(groupBox_3);
+    horizontalLayout_3->addWidget(groupBox);
+    myDockWidget->setWidget(dockWidgetContents);
+*/
+    //-----------
+   
+     QDockWidget *myDockWidget = new QDockWidget(tr("Control Panel"),this);
+     myDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea); 
+     addDockWidget(Qt::RightDockWidgetArea, myDockWidget);
+     QWidget *control = new QWidget();
+     QVBoxLayout *vl0 = new QVBoxLayout(control);
+          {
+        QGroupBox *gb1 = new QGroupBox(tr("One Resistor"),control);
+        QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+        sizePolicy.setHorizontalStretch(0);
+        sizePolicy.setVerticalStretch(0);
+        sizePolicy.setHeightForWidth(gb1->sizePolicy().hasHeightForWidth());
+        gb1->setSizePolicy(sizePolicy);
+    
+        QGroupBox *gb2 = new QGroupBox(tr("Resistor Network"), control);
+        sizePolicy.setHorizontalStretch(0);
+        sizePolicy.setVerticalStretch(0);
+        sizePolicy.setHeightForWidth(gb2->sizePolicy().hasHeightForWidth());
+        gb2->setSizePolicy(sizePolicy);
 
-    Q3GroupBox *oneResistorBox =new Q3GroupBox(6, Qt::Vertical, "One Resistor", control);
-    Q3Grid *gr1=new Q3Grid(2,Qt::Horizontal, oneResistorBox);
-    gr1->setMargin(3);
-    gr1->setSpacing(10);
 
-    this->T.setDisplay(("T(meV)"), gr1);
-    this->U.setDisplay(("U(meV)"), gr1);
-    this->Ex.setDisplay(("E_x(meV)"), gr1);
-    this->sigma0.setDisplay(("r[0--1]"), gr1);
-    this->Tmin.setDisplay(("T_min"),gr1);
-    this->Umin.setDisplay(("U_min"),gr1);
-    this->Tmax.setDisplay(("T_max"),gr1);
-    this->Umax.setDisplay(("U_max"),gr1);
-    this->dT.setDisplay(("dT"), gr1);
-    this->dU.setDisplay(("dU"), gr1);
+        /* now fill gb1/OneResistor */
+         QVBoxLayout *vl2 = new QVBoxLayout(gb1);
+         vl0->addWidget(gb1);
+        {
+            QHBoxLayout *hlLR = new QHBoxLayout;
+           QGroupBox *gb = new QGroupBox(tr("Compute Conductance G"));
+            vl2->addLayout(hlLR);
+            vl2->addWidget(gb);
 
-//    this->ExEdit->setValidator(&theDoubleValidator);
+            /* now fill LR */
+            QVBoxLayout *L = new QVBoxLayout(hlLR);
+            {
+                this->T.setDisplay(("T(meV)"), L);
+                this->Ex.setDisplay(("E_x(meV)"), L);
+                this->Tmin.setDisplay(("T_min"), L);
+                this->Tmax.setDisplay(("T_max"), L);
+                this->dT.setDisplay(("dT"), L);
+            }
+            QVBoxLayout *R = new QVBoxLayout(hlLR);
+            {
+                this->U.setDisplay(("U(meV)"), R);
+                this->rand.setDisplay(("r[0--1]"), R);
+                this->Umin.setDisplay(("U_min"), R);
+                this->Umax.setDisplay(("U_max"), R);
+                this->dU.setDisplay(("dU"), R);
+            }
+            
+            /* now fill gb/Compute Conductance G */
+            QHBoxLayout *hl = new QHBoxLayout(gb);
+            {
+                QPushButton *b1  = new QPushButton(tr("G(T)"));
+                connect(b1,SIGNAL(clicked()), this, SLOT(computeRT1()));
+
+                QPushButton *b2 = new QPushButton(tr("G(U)"));
+                connect(b2,SIGNAL(clicked()), this, SLOT(computeRU1()));
+
+                hl->addWidget(b1);
+                hl->addWidget(b2);             
+            }            
+        }        
+ 
+        /* now fill gb2/ResistorNetwork */
+        QVBoxLayout *vl3 = new QVBoxLayout(gb2);
+        vl0->addWidget(gb2);
+        {
+            QHBoxLayout *hlLR = new QHBoxLayout;
+            QHBoxLayout *hl3 = new QHBoxLayout;
+            QGroupBox *gb3 = new QGroupBox(tr("Canvas Images"), gb2);
+            QGroupBox *gb4 = new QGroupBox(tr("G-curves"), gb2);
+            QGroupBox *gb5 = new QGroupBox(tr("C-curves"), gb2);
+            vl3->addLayout(hlLR);
+            hl3->addWidget(gb3);
+            hl3->addWidget(gb4);
+            hl3->addWidget(gb5);
+            vl3->addLayout(hl3);
+        
+            /* now fill LR */
+            QVBoxLayout *L = new QVBoxLayout(hlLR);
+            {
+                QGroupBox *gbRType = new QGroupBox(tr("Resistor Network Type"));
+                L->addWidget(gbRType);
+
+                QRadioButton *type1 = new QRadioButton(tr("Одинаковые сопротивления"));  
+                QRadioButton *type2 = new QRadioButton(tr("Случайные с exp разбросом"));  
+                QRadioButton *type3 = new QRadioButton(tr("Случ. одномерные сужения"));
+                
+                QVBoxLayout *vbox = new QVBoxLayout(gbRType);
+                vbox->addWidget(type1);
+                vbox->addWidget(type2);
+                vbox->addWidget(type3);
+                //    vbox->addStretch(1);
+
+                this->typeResistor = new QButtonGroup;
+                this->typeResistor->setExclusive(true);
+                this->typeResistor->addButton(type1,0);
+                this->typeResistor->addButton(type2,1);
+                this->typeResistor->addButton(type3,2);
+                this->typeResistor->button(2)->setChecked(true);
+                //connect(typeResistor,SIGNAL(clicked(int)),this,SLOT(selectSigma(int)));
+
+    QString s;
+    s.sprintf("G_net %lg",model ? model->conductivity : 0);
+    this->dispConduct->setText(s);
+    this->capacity.setDisplay(("C="), L);
+
+    s.sprintf("error I: %lg",model ? model->deltaI : 0);
+    this->dispDeltaI->setText(s);
+    this->sigmaMin.setDisplay(("sigmaMin"), L);
+ 
+            }
+            QVBoxLayout *R = new QVBoxLayout(hlLR);
+            {
+    this->rows.setDisplay(("rows"), R);
+    this->cols.setDisplay(("cols"), R);
+    this->seed.setDisplay(("seed"), R);
+    this->sigmaU.setDisplay(("sigmaU"), R);
+    this->r_c.setDisplay(("r_c"), R);
+
+            }
+            
+   
+            /* now fill gb0/Canvas Image */
+//           QVBoxLayout *vl = new QVBoxLayout(hl3);
+           QVBoxLayout *vl = new QVBoxLayout(gb3);
+            {
+                QPushButton *computeButton = new QPushButton(tr("Compute")); 
+                computeButton->setDefault(true);
+                connect(computeButton, SIGNAL(clicked()), this, SLOT(computeModel()));
+
+                QPushButton *drawResButton = new QPushButton(tr("Conductivity network")); 
+                connect(drawResButton,SIGNAL(clicked()), this, SLOT(drawModelR()));
+
+                QPushButton *drawCurButton = new QPushButton(tr("Draw Current I")); 
+                connect(drawCurButton,SIGNAL(clicked()), this, SLOT(drawModelI()));
+
+                QPushButton *drawHeatButton = new QPushButton(tr("Draw Heat I*V")); 
+                connect(drawHeatButton,SIGNAL(clicked()), this, SLOT(drawModelA()));
+                
+ 
+                vl->addWidget(computeButton);
+                vl->addWidget(drawResButton);
+                vl->addWidget(drawCurButton);             
+                vl->addWidget(drawHeatButton);
+            }            
+//           QVBoxLayout *vl1 = new QVBoxLayout(hl3);
+           QVBoxLayout *vl1 = new QVBoxLayout(gb4);
+            {
+                QPushButton *stopB = new QPushButton(tr("STOP")); 
+                connect(stopB, SIGNAL(clicked()), this, SLOT(stopCalc()));
+ 
+                QPushButton *uB = new QPushButton(tr("Conductivity(U)")); 
+                connect(uB,SIGNAL(clicked()), this, SLOT(computeRU()));
+
+                QPushButton *tB = new QPushButton(tr("Conductivity(T)")); 
+                connect(tB,SIGNAL(clicked()), this, SLOT(computeRT()));
+
+                QPushButton *rcB = new QPushButton(tr("Conductivity(rc)")); 
+                connect(rcB,SIGNAL(clicked()), this, SLOT(computeRrc()));
+
+                vl1->addWidget(stopB);
+                vl1->addWidget(uB);
+                vl1->addWidget(tB);
+                vl1->addWidget(rcB);
+ 
+            }
+//           QVBoxLayout *vl2 = new QVBoxLayout(hl3);
+          QVBoxLayout *vl2 = new QVBoxLayout(gb5);
+            {
+                QPushButton *cuB = new QPushButton(tr("Capacity(U)")); 
+                connect(cuB,SIGNAL(clicked()), this, SLOT(computeCapacityU()));
+
+                QPushButton *ctB = new QPushButton(tr("Capacity(T)")); 
+                connect(ctB,SIGNAL(clicked()), this, SLOT(computeCapacityT()));
+             
+                vl2->addWidget(cuB);
+                vl2->addWidget(ctB);
+                vl2->addStretch(1);
+ 
+            }
+
+ }        
+
+    }
+    myDockWidget->setWidget(control);
+   
 
 
-    Q3ButtonGroup *pt1Buttons =new Q3ButtonGroup(2, Qt::Horizontal, "Compute Conductance G", oneResistorBox);
-
-    QPushButton *TButton1  = new QPushButton(tr("G(T)"), pt1Buttons); 
-    TButton1->setMinimumWidth( TButton1->sizeHint().width());
-    connect(TButton1,SIGNAL(clicked()), this, SLOT(computeRT1()));
-
-    QPushButton *uButton1 = new QPushButton(tr("G(U)"), pt1Buttons);
-    uButton1->setMinimumWidth( uButton1->sizeHint().width());
-    connect(uButton1,SIGNAL(clicked()), this, SLOT(computeRU1()));
+ 
 
 
+/*
+//    QButtonGroup *pt1Buttons =new QButtonGroup(2, Qt::Horizontal, "Compute Conductance G", Rb);
+
+//    QPushButton *TButton1  = new QPushButton(tr("G(T)"), pt1Buttons); 
+    QPushButton *tBtn1  = new QPushButton(tr("G(T)"), rb); 
+//    TButton1->setMinimumWidth( TButton1->sizeHint().width());
+    connect(tBtn1,SIGNAL(clicked()), this, SLOT(computeRT1()));
+    gr1->addWidget(tBtn1, 1, 0);
+
+//    QPushButton *uButton1 = new QPushButton(tr("G(U)"), pt1Buttons);
+    QPushButton *uBtn1 = new QPushButton(tr("G(U)"), rb);
+//    uButton1->setMinimumWidth( uButton1->sizeHint().width());
+    connect(uBtn1,SIGNAL(clicked()), this, SLOT(computeRU1()));
+    gr1->addWidget(uBtn1, 1, 1);
+*/
+/*
     //------------------------------
     Q3GroupBox *networkBox =new Q3GroupBox(8, Qt::Vertical, "Resistor Network", control);
     Q3Grid *gr2=new Q3Grid(2,Qt::Horizontal, networkBox);
@@ -293,12 +528,13 @@ void MainWindow::initControlDockWindow()
     QPushButton *rcButton = new QPushButton(tr("Conductivity(rc)"), ptButtons); 
     connect(rcButton,SIGNAL(clicked()), this, SLOT(computeRrc()));
 
-    this->moveDockWindow(control,Qt::Right);
-    setDockEnabled(Qt::DockLeft, false);  
-    setDockEnabled(Qt::DockBottom, false);  
-    setDockEnabled(Qt::DockTop, false); 
-    control->setCloseMode(Q3DockWindow::Undocked);
-    control->setMinimumWidth( control->sizeHint().width());
+//    this->moveDockWindow(control,Qt::Right);
+//    setDockEnabled(Qt::DockLeft, false);  
+//    setDockEnabled(Qt::DockBottom, false);  
+//    setDockEnabled(Qt::DockTop, false); 
+//    control->setCloseMode(Q3DockWindow::Undocked);
+//    control->setMinimumWidth( control->sizeHint().width());
+*/
 } 
 
 
@@ -315,9 +551,9 @@ void MainWindow::initPlotterU()
 {
     winPlotU = new QDialog(this);
     winPlotU->setCaption(tr("Dependences G(U):"));
-    Q3VBoxLayout *layout=new Q3VBoxLayout(winPlotU);
+    QVBoxLayout *layout=new QVBoxLayout(winPlotU);
     this->plotterU= new Plotter(winPlotU);
-    this->plotterU = new Plotter(winPlotU);
+//    this->plotterU = new Plotter(winPlotU);
     this->plotterU->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterU);
 }
@@ -327,7 +563,7 @@ void MainWindow::initPlotterT()
 {
     winPlotT = new QDialog(this);
     winPlotT->setCaption(tr("Dependences G(T):"));
-    Q3VBoxLayout *layout=new Q3VBoxLayout(winPlotT);
+    QVBoxLayout *layout=new QVBoxLayout(winPlotT);
     this->plotterT= new Plotter(winPlotT);
     this->plotterT->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterT);
@@ -336,7 +572,7 @@ void MainWindow::initPlotterCT()
 {
     winPlotCT = new QDialog(this);
     winPlotCT->setCaption(tr("Capacity(T):"));
-    Q3VBoxLayout *layout=new Q3VBoxLayout(winPlotCT);
+    QVBoxLayout *layout=new QVBoxLayout(winPlotCT);
     this->plotterCT= new Plotter(winPlotCT);
     this->plotterCT->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterCT);
@@ -345,7 +581,7 @@ void MainWindow::initPlotterCU()
 {
     winPlotCU = new QDialog(this);
     winPlotCU->setCaption(tr("Capacity(U):"));
-    Q3VBoxLayout *layout=new Q3VBoxLayout(winPlotCU);
+    QVBoxLayout *layout=new QVBoxLayout(winPlotCU);
     this->plotterCU= new Plotter(winPlotCU);
     this->plotterCU->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterCU);
@@ -358,12 +594,15 @@ void MainWindow::setModel()
 //    model = new PercolRect(this->rows,this->cols);
 }
 //--------------------------------------------------------------------------------------------
-MainWindow::MainWindow(QWidget *parent, const char *name, Qt::WFlags f)
-: sigma0(0.5), sigmaU(1000.0), flgStop(false),
+//MainWindow::MainWindow(QWidget *parent, const char *name, Qt::WFlags f)
+MainWindow::MainWindow(QWidget *parent, Qt::WFlags f)
+: rand(0.5), sigmaU(1000.0), flgStop(false),
 T(0.5), Tmin(0.1),Tmax(5.2), dT(0.1), 
 U(400), Umin(200.), Umax(700), dU(25.), 
-r_c(0.0), Ex(0.5),  Q3MainWindow(parent,name,f),
+r_c(0.0), Ex(0.5), QMainWindow(parent,f),
+//Q3MainWindow(parent,name,f),
 rows(30), cols(50), numOfCurve(1), seed(0), model(0)
+
 {
     this->initMenuBar(); 
     this->initStatusBar();
@@ -380,7 +619,10 @@ rows(30), cols(50), numOfCurve(1), seed(0), model(0)
 
 bool MainWindow::saveAs()
 {
-    QString fn = Q3FileDialog::getSaveFileName( QString::null, QString::null, this );
+     QString fn = QFileDialog::getSaveFileName( this, 
+                         tr("Choose a file name"), ".",
+                         tr("*.dat*"));
+//         QString::null, QString::null);
     if ( !fn.isEmpty() ) {
         curFile = fn;
         return this->save();
@@ -397,7 +639,6 @@ bool MainWindow::save()
     QString nV=this->curFile+"V";
     QFile fV(nV);
 //    QFile f(this->curFile);
-
     if(fV.exists()){
         int n=QMessageBox::warning(0,
             tr("Warning"),
@@ -416,7 +657,7 @@ bool MainWindow::save()
     //Saving the file!
     fV.open(QIODevice::WriteOnly|QIODevice::Truncate);
 
-    Q3TextStream o(&fV);
+    QTextStream o(&fV);
     o << "Percolation model:\n";
     o << "Rows Cols Seed Conduct Temp Vg sigmaU Ex\n";
         QString s1;
@@ -454,6 +695,7 @@ bool MainWindow::save()
         ss.sprintf("%lg %lg %lg\n",xy1.first,xy1.second,model->V[1]);
         o << ss;
         fV.close();
+//    statusBar()->showMessage(tr("Saved '%1'").arg(fV), 2009);
     QString nC=this->curFile+"C";
     QFile fC(nC);
 //    QFile f(this->curFile);
@@ -476,7 +718,7 @@ bool MainWindow::save()
     //Saving the file!
     fC.open(QIODevice::WriteOnly|QIODevice::Truncate);
 
-    Q3TextStream oC(&fC);
+    QTextStream oC(&fC);
     oC << "Current at centers of edges\n";
     for (int e = 0; e < model->nI(); ++e)
     {
@@ -496,6 +738,7 @@ bool MainWindow::save()
         oC << s;
     }
     fC.close();
+//    statusBar()->showMessage(tr("Saved '%1'").arg(fC), 2009);
     return TRUE;
 }
 
@@ -888,7 +1131,8 @@ void
 MainWindow::computeModel()
 {  
 //    this->setModel();
-    this->selectSigma(this->typeResistor->selectedId());
+    int r_type = this->typeResistor->checkedId();
+    this->selectSigma(r_type);
     model->compute();
     QString s;
     s.sprintf("%lg",model->rcond);
@@ -924,11 +1168,11 @@ MainWindow::computeModel()
 }
 void MainWindow::computeOneR()
 {  
-        model->conductivity=singleSigma(this->sigma0, this->Ex);
+        model->conductivity=singleSigma(this->rand, this->Ex);
         this->U.updateDisplay();
         this->T.updateDisplay();
 //        model->conductivity.updateDisplay();
-        qApp->processEvents();
+        QApplication::processEvents();
 }
 void 
 MainWindow::computeCapacityU()
@@ -1078,7 +1322,8 @@ MainWindow::computeRT1()
 {
     winPlotT->show();
     winPlotT->raise();
-    winPlotT->setActiveWindow();
+//    winPlotT->setActiveWindow();
+//    winPlotT->activateWindow();
     std::vector<double> data;
     for (double x =this->Tmin; x <= this->Tmax; x += dT)
     {   
@@ -1338,7 +1583,7 @@ void MainWindow::selectSigma(int i)
         {
             model->Sigma[i]=this->sigmaU;
         }
-        else model->Sigma[i] = singleSigma(this->sigma0,this->Ex);//1.;//this->sigma0;
+        else model->Sigma[i] = singleSigma(this->rand,this->Ex);//1.;//this->rand;
      }
         break;
     case 1: /* random Sigma */
@@ -1376,11 +1621,15 @@ void MainWindow::selectSigma(int i)
 */
 void MainWindow::resizeEvent( QResizeEvent *e )
 {
+    /*
     QSize nsz = e->size(); 
     QSize osz = e->oldSize();
     Q3Canvas *c = cv->canvas();
 
-    c->resize( c->width()+nsz.width()-osz.width(),
-        c->height()+nsz.height()-osz.height() );
+    c->resize(
+        c->width()+nsz.width()-osz.width(),
+        c->height()+nsz.height()-osz.height() 
+        );
+        */
 }
 
