@@ -2,38 +2,9 @@
 #define MAINWINDOW_H_INCLUDED
 #include <QtGui>
 
-#include <q3mainwindow.h>
-#include <q3canvas.h>
-#include <qcombobox.h> 
-#include <qstatusbar.h>
-#include <qmessagebox.h>
-#include <qsettings.h>
-#include <qlabel.h>
-//#include <qlineedit.h>
-#include <qevent.h>
-#include <q3buttongroup.h> 
-#include <qdialog.h> 
-//Added by qt3to4:
-#include <QResizeEvent>
-#include <QMouseEvent>
-#include <QAction>
-
 #include "percol2d.h"
 #include "plotter.h"
 #include "myparam.h"
-
-class PercolView : public Q3CanvasView
-{
-    Q_OBJECT
-public:
-    PercolView(Q3Canvas& c, QWidget* parent=0, const char* name=0, Qt::WFlags f=0);
-    void clear();
-    void setModel(Percol2D *m) { model = m; }
-
-private:
-    QLabel *info;
-    Percol2D *model;
-};
 
 //---------------------------------------------------------------------
 // Define main window 
@@ -43,8 +14,6 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget* parent=0, Qt::WindowFlags f=0);
     ~MainWindow(){ clear(); }
-//    MainWindow(QWidget* parent=0, const char* name=0, Qt::WFlags f=0);
-//    ~MainWindow(){ clear(); }
     void setModel();
 
 public slots:
@@ -92,12 +61,12 @@ private:
     void initMenuBar();
     void initStatusBar();
     void initControlDockWindow();
-    void initCanvasView();
+    void initGraphicsView();
     inline double singleSigma(double V, double r);
     inline double singleSigmaT0(double E, double V, double r, double EFc);
 
     QFont myfont;
-    Q3CanvasView *cv;
+    QGraphicsView *gv;
     Percol2D *model;
     QButtonGroup *typeResistor;
     QString curFile;

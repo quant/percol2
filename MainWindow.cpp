@@ -538,14 +538,12 @@ void MainWindow::initControlDockWindow()
 } 
 
 
-void MainWindow::initCanvasView() 
+void MainWindow::initGraphicsView() 
 {
-
-//    QCanvas *c = new QCanvas(800,800);
-    Q3Canvas *c = new Q3Canvas(600,600);
-    c->setAdvancePeriod(30);
-    cv = new Q3CanvasView(c,this);
-    setCentralWidget(cv);
+    QGraphicsScene *scene = new QGraphicsScene(0,0,600,600);
+    this->gv = new QGraphicsView(scene,this);
+    setCentralWidget(this->gv);
+    this->gv->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 }
 void MainWindow::initPlotterU() 
 {
@@ -612,7 +610,7 @@ rows(30), cols(50), numOfCurve(1), seed(0), model(0)
     this->initPlotterCU();
     this->initControlDockWindow();
     this->setModel();
-    this->initCanvasView();
+    this->initGraphicsView();
     init();
 }
 
@@ -775,46 +773,38 @@ void MainWindow::init()
 void MainWindow::clear()
 {
     setMouseTracking( FALSE );
-
-    Q3CanvasItemList list = cv->canvas()->allItems();
-    Q3CanvasItemList::Iterator it = list.begin();
-    for (; it != list.end(); ++it) {
-	if ( *it )
-	    delete *it;
-    }
+    this->gv->scene()->clear();
 }
 
 
 class NodeItemFactory
 {
-    Q3Canvas *canvas;
+    QGraphicsScene *canvas;
     ColorScale *cs;
     double scale;
     QPair<double,double> offset;
     int blob_size;
 public:
-    NodeItemFactory( Q3Canvas *_canvas, ColorScale *_cs, 
-        double _scale, QPair<double,double> _offset ) 
-        : canvas(_canvas), cs(_cs), scale(_scale), offset(_offset), blob_size(2) {}
-    Q3CanvasEllipse *newVnode(double v, QPair<double,double> xy)
+    NodeItemFactory( QGraphicsScene *_canvas, ColorScale *_cs, 
+        double _scale, QPair<double,double> _offset, int _blob_size = 2 ) 
+        : canvas(_canvas), cs(_cs), scale(_scale), offset(_offset), blob_size(_blob_size) {}
+//    Q3CanvasEllipse *newVnode(double v, QPair<double,double> xy)
+    QGraphicsEllipseItem *newVnode(double v, QPair<double,double> xy)
     {
-        Q3CanvasEllipse *n = new Q3CanvasEllipse(2,2,canvas);
-        n->setBrush(QBrush(cs->color(v)));
-        n->setPen(QPen(Qt::black,2));
-        n->setZ( 128 );
         double canvasx = (xy.first - offset.first) * scale;
         double canvasy = (xy.second - offset.second) * scale;
-        n->move( canvasx, canvasy );
+        QGraphicsEllipseItem *n = canvas->addEllipse(canvasx,canvasy,2,2,QPen(Qt::black,2),QBrush(cs->color(v)));
         return n;
     }
-    Q3CanvasEllipse *newWnode(double v, QPair<double,double> xy)
+    QGraphicsEllipseItem *newWnode(double v, QPair<double,double> xy)
+//new:    QGraphicsEllipseItem *newWnode(double v, QPair<double,double> xy)???(10,10)->(-5, -5, 10, 10);
     {
-        Q3CanvasEllipse *n = new Q3CanvasEllipse(blob_size,blob_size,canvas);
-        n->setBrush(QBrush(cs->color(v)));
-        n->setZ( 128 );
         double canvasx = (xy.first - offset.first) * scale;
         double canvasy = (xy.second - offset.second) * scale;
-        n->move( canvasx, canvasy );
+        QGraphicsEllipseItem *n = new QGraphicsEllipseItem(canvasx,canvasy,blob_size,blob_size,0,canvas);
+        n->setBrush(QBrush(cs->color(v)));
+//        n->setZ( 128 );
+//        n->move( canvasx, canvasy );
         return n;
     }
     void setBlobSize(int s) { blob_size = s; }
@@ -822,17 +812,21 @@ public:
 
 class EdgeItemFactory
 {
-    Q3Canvas *canvas;
+    QGraphicsScene *canvas;
     ColorScale2 *cs;
     double scale;
     QPair<double,double> offset;
 public:
-    EdgeItemFactory( Q3Canvas *_canvas, ColorScale2 *_cs,
+    EdgeItemFactory( QGraphicsScene *_canvas, ColorScale2 *_cs,
         double _scale, QPair<double,double> _offset ) 
         : canvas(_canvas), cs(_cs), scale(_scale), offset(_offset) {}
-    Q3CanvasLine *newEdge(double c, QPair<double,double> xy0, QPair<double,double> xy1)
+    QGraphicsLineItem *newEdge(double c, QPair<double,double> xy0, QPair<double,double> xy1)
     {
-        Q3CanvasLine *n = new Q3CanvasLine(canvas);
+        int canvasx0 = (xy0.first - offset.first) * scale;
+        int canvasy0 = (xy0.second - offset.second) * scale;
+        int canvasx1 = (xy1.first - offset.first) * scale;
+        int canvasy1 = (xy1.second - offset.second) * scale;
+        QGraphicsLineItem *n = new QGraphicsLineItem(canvasx0,canvasy0,canvasx1,canvasy1,0,canvas);
         if (c == 0)
             n->setPen(QPen(Qt::white));
         else if (c == CUTOFF_SIGMA)
@@ -840,11 +834,7 @@ public:
         else
             n->setPen(QPen(cs->color(c),2));
 //          if(c==sigmaMin) n->setPen(QPen(Qt::red)); 
-        int canvasx0 = (xy0.first - offset.first) * scale;
-        int canvasy0 = (xy0.second - offset.second) * scale;
-        int canvasx1 = (xy1.first - offset.first) * scale;
-        int canvasy1 = (xy1.second - offset.second) * scale;
-        n->setPoints(canvasx0,canvasy0,canvasx1,canvasy1);
+//        n->setPoints(canvasx0,canvasy0,canvasx1,canvasy1);
         return n;
     }
 };
@@ -852,13 +842,14 @@ public:
 
 void MainWindow::drawModelA()
 {
-    clear();
-    Q3Canvas *pCanvas = cv->canvas();
+    QGraphicsScene *scene = gv->scene();
+    gv->fitInView(scene->sceneRect(),Qt::KeepAspectRatioByExpanding);
+    scene->clear();
 
     // Set view port
     const double factor = 0.95;
-    double xscale = factor * pCanvas->width()  / (model->xmax() - model->xmin());
-    double yscale = factor * pCanvas->height() / (model->ymax() - model->ymin());
+    double xscale = factor * scene->width()  / (model->xmax() - model->xmin());
+    double yscale = factor * scene->height() / (model->ymax() - model->ymin());
     double scale = xscale < yscale ? xscale : yscale;
     
     QPair<double,double> offset;
@@ -873,21 +864,33 @@ void MainWindow::drawModelA()
     }
     for (int w = 0; w < model->nW(); ++w)
     {
-        if (model->W[w] > vmax) vmax = model->W[w];
-        if (model->W[w] < vmin) vmin = model->W[w];
+        double woltage = model->W[w];
+        if (woltage < vmin || woltage > vmax)
+        {
+            QString s;
+            s.sprintf("Got %lg at w=%i\n",woltage,w);
+            QMessageBox::warning(this, tr("W-voltage out of bound"),s,
+                QMessageBox::Ok,QMessageBox::Ok);
+            break;
+        }
+        if (woltage > vmax) vmax = woltage;
+        if (woltage < vmin) vmin = woltage;
     }
     csV.setRange(vmin,vmax);
     csV.setColors(Qt::red,Qt::blue);
 
-    NodeItemFactory vfactory(pCanvas,&csV,scale,offset);
+    NodeItemFactory vfactory(scene,&csV,scale,offset);
     int emax;
     double imin = 1e300, imax = -1e300;
     double q;
     for (int i = 0; i < model->nI(); ++i)
     {   
-             q=(model->I[i])*(model->I[i])/(model->Sigma[i]);
-        if (fabs(q) > imax) {imax = fabs(q); 
-        emax=i;}
+        q=(model->I[i])*(model->I[i])/(model->Sigma[i]);
+        if (fabs(q) > imax) 
+        {
+            imax = fabs(q); 
+            emax=i;
+        }
         if (fabs(q) < imin) imin = fabs(q);
 
     }
@@ -899,13 +902,14 @@ void MainWindow::drawModelA()
     csI.setColors(Qt::white,Qt::black);
 //     csI.setExtraColor(0.1*imax,QColor("#007f00"));
 
-    EdgeItemFactory ifactory(pCanvas,&csI,scale,offset);
+    EdgeItemFactory ifactory(scene,&csI,scale,offset);
 
     for (int v = 0; v < model->nV(); ++v)
     {
         double V = model->V[v];
         QPair<double,double> xy = model->xy(v);
-        Q3CanvasEllipse *n = vfactory.newVnode(V, xy);
+        QGraphicsEllipseItem *n = vfactory.newVnode(V, xy);
+        n->setZValue(128);
         n->show();
     }
 
@@ -914,7 +918,8 @@ void MainWindow::drawModelA()
     {
         double W = model->W[w];
         QPair<double,double> xy = model->xy(v+w);
-        Q3CanvasEllipse *n = vfactory.newWnode(W, xy);
+        QGraphicsEllipseItem  *n = vfactory.newWnode(W, xy);
+        n->setZValue(128);
         n->show();
     }
 
@@ -926,7 +931,7 @@ void MainWindow::drawModelA()
 //        q=(model->I[e])/(model->Sigma[e]);
         q=(model->I[e])*(model->I[e])/(model->Sigma[e]);
         if(q<0.00000000001) q=0.;
-        Q3CanvasLine *n = ifactory.newEdge( q , xy0, xy1 );
+        QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
         n->show();
     }
     setMouseTracking( TRUE );
@@ -935,6 +940,7 @@ void MainWindow::drawModelA()
 void MainWindow::drawModelI()
 {//   this->selectSigma(QComboBox::currentItem());
     clear();
+#if 0
     Q3Canvas *pCanvas = cv->canvas();
     cv->adjustSize();
 
@@ -1045,12 +1051,12 @@ void MainWindow::drawModelI()
         n->show();
     }
     setMouseTracking( TRUE );
+#endif
 }
 void MainWindow::drawModelR()
-
-
 {  
     clear();
+#if 0
     Q3Canvas *pCanvas = cv->canvas();
 
     // Set view port
@@ -1124,6 +1130,7 @@ void MainWindow::drawModelR()
         n->show();
      }
     setMouseTracking( TRUE );
+#endif
 }
 
 
