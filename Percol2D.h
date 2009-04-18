@@ -43,7 +43,7 @@ public:
     void compute_general(); // using general matrix (NxN storage)
 
     // Reciprocal condition number of the last computation
-    double rcond, ferr, berr, deltaI, conductivity;
+    double rcond, ferr, berr, deltaI, conductivity,capacity;
 };
 
 // Define a rectangular percolation grid with source drain at opposite 

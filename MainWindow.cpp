@@ -1,48 +1,11 @@
-#include <q3popupmenu.h>
-#include <qmenubar.h>
-#include <qapplication.h>
-#include <qmessagebox.h>
-#include <q3canvas.h>
-#include <qlabel.h>
-#include <qfile.h>
-#include <q3textstream.h>
-//Added by qt3to4:
-#include <QResizeEvent>
-#include <QMouseEvent>
-#include <Q3VBoxLayout>
-#include <Q3MemArray>
 #include "mainwindow.h"
 #include "mkl.h"
 #include <math.h>
-#include <qstring.h>
-#include <qvalidator.h> 
-#include <qlayout.h>  
-#include <qlineedit.h> 
-#include <q3toolbar.h>
-#include <q3hbox.h>
-#include <q3vbox.h>
-#include <q3filedialog.h>
-#include <qfont.h> 
-#include <qfontdialog.h> 
-//#include <qgroupbox.h> 
-#include <q3buttongroup.h> 
-#include <qradiobutton.h> 
-#include <q3grid.h>
-#include <qpushbutton.h>
 #include "myparam.h"
-#include <QtCore/QVariant>
-#include <QtGui/QAction>
-#include <QtGui/QApplication>
-#include <QtGui/QButtonGroup>
-#include <QtGui/QDockWidget>
-#include <QtGui/QGroupBox>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QPushButton>
-#include <QtGui/QVBoxLayout>
-#include <QtGui/QWidget>
 
 
 const double CUTOFF_SIGMA = 1e-10;
+const int NCUT = 1e4;
 const double EF=15;//20.;//8.;//meV
 class ColorScale
 {
@@ -105,8 +68,9 @@ public:
 };
 
 ColorScale csV; // Voltage scale and node coloring
+ColorScale2 csJ; // Joule heat scale and node coloring
 ColorScale2 csI; // Current scale and edge coloring
-ColorScale csSigma; // Sigma scale and edge coloring
+ColorScale2 csS; // Sigma scale and edge coloring
 
 class DoubleValidator : public QRegExpValidator
 {
@@ -178,21 +142,24 @@ void MainWindow::chooseFont()
 void MainWindow::initStatusBar()
 {
     createStatusBar();
-    this->dispCond = new QLabel("----",
+    this->dispCond = new QLabel("RCond: --------------",
             this->statusBar());
     this->statusBar()->addWidget(this->dispCond);
-    this->dispDeltaI = new QLabel("----",
+    this->dispDeltaI = new QLabel("dI: -----------",
             this->statusBar());
     this->statusBar()->addWidget(this->dispDeltaI);
-    this->dispFerr = new QLabel("----",
+    this->dispFerr = new QLabel("Ferr: -----------",
             this->statusBar());
     this->statusBar()->addWidget(this->dispFerr);
-    this->dispBerr = new QLabel("----",
+    this->dispBerr = new QLabel("Berr: -----------",
             this->statusBar());
     this->statusBar()->addWidget(this->dispBerr);
-    this->dispConduct = new QLabel("----",
+    this->dispConduct = new QLabel("G: ------------",
             this->statusBar());
     this->statusBar()->addWidget(this->dispConduct);
+    this->dispCapac = new QLabel("C: ------------",
+            this->statusBar());
+    this->statusBar()->addWidget(this->dispCapac);
 }
 
 
@@ -343,13 +310,7 @@ void MainWindow::initControlDockWindow()
                 this->typeResistor->button(2)->setChecked(true);
                 //connect(typeResistor,SIGNAL(clicked(int)),this,SLOT(selectSigma(int)));
 
-    QString s;
-    s.sprintf("G_net %lg",model ? model->conductivity : 0);
-    this->dispConduct->setText(s);
-    this->capacity.setDisplay(("C="), L);
-
-    s.sprintf("error I: %lg",model ? model->deltaI : 0);
-    this->dispDeltaI->setText(s);
+//    this->capacity.setDisplay(("C="), L);
     this->sigmaMin.setDisplay(("sigmaMin"), L);
  
             }
@@ -386,6 +347,8 @@ void MainWindow::initControlDockWindow()
                 vl->addWidget(drawResButton);
                 vl->addWidget(drawCurButton);             
                 vl->addWidget(drawHeatButton);
+                vl->addStretch(1);
+
             }            
 //           QVBoxLayout *vl1 = new QVBoxLayout(hl3);
            QVBoxLayout *vl1 = new QVBoxLayout(gb4);
@@ -406,6 +369,7 @@ void MainWindow::initControlDockWindow()
                 vl1->addWidget(uB);
                 vl1->addWidget(tB);
                 vl1->addWidget(rcB);
+                vl1->addStretch(1);
  
             }
 //           QVBoxLayout *vl2 = new QVBoxLayout(hl3);
@@ -416,9 +380,17 @@ void MainWindow::initControlDockWindow()
 
                 QPushButton *ctB = new QPushButton(tr("Capacity(T)")); 
                 connect(ctB,SIGNAL(clicked()), this, SLOT(computeCapacityT()));
+
+                QPushButton *cpSB = new QPushButton(tr("pSigma")); 
+                connect(cpSB,SIGNAL(clicked()), this, SLOT(compute_pSigma()));
+
+                QPushButton *cSpSB = new QPushButton(tr("Sum_pSigma")); 
+                connect(cSpSB,SIGNAL(clicked()), this, SLOT(compute_SumpSigma()));
              
                 vl2->addWidget(cuB);
                 vl2->addWidget(ctB);
+                vl2->addWidget(cpSB);
+                vl2->addWidget(cSpSB);
                 vl2->addStretch(1);
  
             }
@@ -426,7 +398,9 @@ void MainWindow::initControlDockWindow()
  }        
 
     }
+    vl0->addStretch(1);
     myDockWidget->setWidget(control);
+ 
    
 
 
@@ -791,18 +765,21 @@ public:
 //    Q3CanvasEllipse *newVnode(double v, QPair<double,double> xy)
     QGraphicsEllipseItem *newVnode(double v, QPair<double,double> xy)
     {
-        double canvasx = (xy.first - offset.first) * scale;
-        double canvasy = (xy.second - offset.second) * scale;
-        QGraphicsEllipseItem *n = canvas->addEllipse(canvasx,canvasy,2,2,QPen(Qt::black,2),QBrush(cs->color(v)));
+        int v_blob_size = 2;
+        double canvasx = (xy.first - offset.first) * scale - 0.5 * v_blob_size;
+        double canvasy = (xy.second - offset.second) * scale -  0.5 * v_blob_size;
+        QGraphicsEllipseItem *n = canvas->addEllipse(canvasx,canvasy,
+                 v_blob_size,v_blob_size,QPen(Qt::black,0),QBrush(cs->color(v)));
         return n;
     }
     QGraphicsEllipseItem *newWnode(double v, QPair<double,double> xy)
 //new:    QGraphicsEllipseItem *newWnode(double v, QPair<double,double> xy)???(10,10)->(-5, -5, 10, 10);
     {
-        double canvasx = (xy.first - offset.first) * scale;
-        double canvasy = (xy.second - offset.second) * scale;
-        QGraphicsEllipseItem *n = new QGraphicsEllipseItem(canvasx,canvasy,blob_size,blob_size,0,canvas);
-        n->setBrush(QBrush(cs->color(v)));
+        double canvasx = (xy.first - offset.first) * scale - 0.5*blob_size;
+        double canvasy = (xy.second - offset.second) * scale - 0.5*blob_size;
+        QColor c = cs->color(v);
+        QGraphicsEllipseItem *n = canvas->addEllipse(canvasx,canvasy,blob_size,blob_size,QPen(c),QBrush(c));
+//        n->setBrush(QBrush(cs->color(v)));
 //        n->setZ( 128 );
 //        n->move( canvasx, canvasy );
         return n;
@@ -826,15 +803,16 @@ public:
         int canvasy0 = (xy0.second - offset.second) * scale;
         int canvasx1 = (xy1.first - offset.first) * scale;
         int canvasy1 = (xy1.second - offset.second) * scale;
-        QGraphicsLineItem *n = new QGraphicsLineItem(canvasx0,canvasy0,canvasx1,canvasy1,0,canvas);
+        QPen pen;
         if (c == 0)
-            n->setPen(QPen(Qt::white));
+            pen = QPen(Qt::white);
         else if (c == CUTOFF_SIGMA)
-            n->setPen(QPen(Qt::blue));
+            pen = QPen(Qt::blue);
         else
-            n->setPen(QPen(cs->color(c),2));
+            pen = QPen(cs->color(c),2);
 //          if(c==sigmaMin) n->setPen(QPen(Qt::red)); 
 //        n->setPoints(canvasx0,canvasy0,canvasx1,canvasy1);
+        QGraphicsLineItem *n = canvas->addLine(canvasx0,canvasy0,canvasx1,canvasy1,pen);
         return n;
     }
 };
@@ -880,29 +858,103 @@ void MainWindow::drawModelA()
     csV.setColors(Qt::red,Qt::blue);
 
     NodeItemFactory vfactory(scene,&csV,scale,offset);
+    vfactory.setBlobSize(2);//!!!
     int emax;
-    double imin = 1e300, imax = -1e300;
+    double Jmin = 1e300, Jmax = -1e300;
     double q;
     for (int i = 0; i < model->nI(); ++i)
     {   
         q=(model->I[i])*(model->I[i])/(model->Sigma[i]);
-        if (fabs(q) > imax) 
+        if (fabs(q) > Jmax) 
         {
-            imax = fabs(q); 
+            Jmax = fabs(q); 
             emax=i;
         }
-        if (fabs(q) < imin) imin = fabs(q);
+        if (fabs(q) < Jmin) Jmin = fabs(q);
 
     }
-//    csI.setRange(0., imax);
-    this->sigmaMin=model->Sigma[emax];
+        this->sigmaMin=model->Sigma[emax];
         this->sigmaMin.updateDisplay();
-    csI.setRange(imin, imax);
-//    csI.setColors(Qt::white,Qt::green);
-    csI.setColors(Qt::white,Qt::black);
-//     csI.setExtraColor(0.1*imax,QColor("#007f00"));
+      csJ.setRange(Jmin, Jmax);
+      csJ.setColors(Qt::white,Qt::black);
 
-    EdgeItemFactory ifactory(scene,&csI,scale,offset);
+    EdgeItemFactory ifactory(scene,&csJ,scale,offset);
+
+    for (int v = 0; v < model->nV(); ++v)
+    {
+        double V = model->V[v];
+        QPair<double,double> xy = model->xy(v);
+        QGraphicsEllipseItem *n = vfactory.newVnode(V, xy);
+        n->setZValue(128);
+//        n->show();
+    }
+
+    int v = model->nV();
+    for (int w = 0; w < model->nW(); ++w)
+    {
+        double W = model->W[w];
+        QPair<double,double> xy = model->xy(v+w);
+        QGraphicsEllipseItem  *n = vfactory.newWnode(W, xy);
+        n->setZValue(128);
+//        n->show();
+    }
+
+    for (int e = 0; e < model->nI(); ++e)
+    {
+        QPair<int,int> ends = model->ends(e);
+        QPair<double,double> xy0 = model->xy(ends.first);
+        QPair<double,double> xy1 = model->xy(ends.second);
+        q=(model->I[e])*(model->I[e])/(model->Sigma[e]);
+        if(q<0.00000000001) q=0.;
+        QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
+//        n->show();
+    }
+    scene->update();
+    this->gv->update();
+//    setMouseTracking( TRUE );
+}
+
+void MainWindow::drawModelI()
+{
+    QGraphicsScene *scene = gv->scene();
+    gv->fitInView(scene->sceneRect(),Qt::KeepAspectRatioByExpanding);
+    scene->clear();
+
+    // Set view port
+    const double factor = 0.95;
+    double xscale = factor * scene->width()  / (model->xmax() - model->xmin());
+    double yscale = factor * scene->height() / (model->ymax() - model->ymin());
+    double scale = xscale < yscale ? xscale : yscale;
+    
+    QPair<double,double> offset;
+    offset.first = -0.5 * (model->xmax() - model->xmin()) * (1.0 - factor) / factor;
+    offset.second = -0.5 * (model->ymax() - model->ymin()) * (1.0 - factor) / factor;
+#if 0
+
+    double vmin = 1e300, vmax = -1e300;
+    for (int v = 0; v < model->nV(); ++v)
+    {
+        if (model->V[v] > vmax) vmax = model->V[v];
+        if (model->V[v] < vmin) vmin = model->V[v];
+    }
+    for (int w = 0; w < model->nW(); ++w)
+    {
+        double woltage = model->W[w];
+        if (woltage < vmin || woltage > vmax)
+        {
+            QString s;
+            s.sprintf("Got %lg at w=%i\n",woltage,w);
+            QMessageBox::warning(this, tr("W-voltage out of bound"),s,
+                QMessageBox::Ok,QMessageBox::Ok);
+            break;
+        }
+        if (woltage > vmax) vmax = woltage;
+        if (woltage < vmin) vmin = woltage;
+    }
+    csV.setRange(vmin,vmax);
+    csV.setColors(Qt::red,Qt::blue);
+
+    NodeItemFactory vfactory(scene,&csV,scale,offset);
 
     for (int v = 0; v < model->nV(); ++v)
     {
@@ -923,54 +975,8 @@ void MainWindow::drawModelA()
         n->show();
     }
 
-    for (int e = 0; e < model->nI(); ++e)
-    {
-        QPair<int,int> ends = model->ends(e);
-        QPair<double,double> xy0 = model->xy(ends.first);
-        QPair<double,double> xy1 = model->xy(ends.second);
-//        q=(model->I[e])/(model->Sigma[e]);
-        q=(model->I[e])*(model->I[e])/(model->Sigma[e]);
-        if(q<0.00000000001) q=0.;
-        QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
-        n->show();
-    }
-    setMouseTracking( TRUE );
-}
+#endif
 
-void MainWindow::drawModelI()
-{//   this->selectSigma(QComboBox::currentItem());
-    clear();
-#if 0
-    Q3Canvas *pCanvas = cv->canvas();
-    cv->adjustSize();
-
-    // Set view port
-    const double factor = 0.95;
-    double cw = pCanvas->width();
-    double ch = pCanvas->height();
-    double xscale = factor * cw  / (model->xmax() - model->xmin());
-    double yscale = factor * ch / (model->ymax() - model->ymin());
-    double scale = xscale < yscale ? xscale : yscale;
-    
-    QPair<double,double> offset;
-    offset.first = -0.5 * (model->xmax() - model->xmin()) * (1.0 - factor) / factor;
-    offset.second = -0.5 * (model->ymax() - model->ymin()) * (1.0 - factor) / factor;
-
-    double vmin = 1e300, vmax = -1e300;
-    for (int v = 0; v < model->nV(); ++v)
-    {
-        if (model->V[v] > vmax) vmax = model->V[v];
-        if (model->V[v] < vmin) vmin = model->V[v];
-    }
-    for (int w = 0; w < model->nW(); ++w)
-    {
-        if (model->W[w] > vmax) vmax = model->W[w];
-        if (model->W[w] < vmin) vmin = model->W[w];
-    }
-    csV.setRange(vmin,vmax);
-    csV.setColors(Qt::red,Qt::blue);
-
-    NodeItemFactory vfactory(pCanvas,&csV,scale,offset);
     int emax;
     double imin = 1e300, imax = -1e300;
     double q;
@@ -985,35 +991,27 @@ void MainWindow::drawModelI()
         if (fabs(q) < imin) 
             imin = fabs(q);
     }
-//    csI.setRange(0., imax);
-    this->sigmaMin = model->Sigma[emax];
-    this->sigmaMin.updateDisplay();
+
     csI.setRange(imin, imax);
 //    csI.setColors(Qt::white,Qt::green);
     csI.setColors(Qt::white,Qt::black);
-//    csI.setExtraColor(0.05*imax,QColor("#007f00"));
+//    csI.setExtraColor(imin+0.05*(imax-imin),QColor("#007f00"));
+    EdgeItemFactory ifactory(scene,&csI,scale,offset);
 
-    EdgeItemFactory ifactory(pCanvas,&csI,scale,offset);
-
-    for (int v = 0; v < model->nV(); ++v)
+    //setMouseTracking( FALSE );
+    for (int e = 0; e < model->nI(); ++e)
     {
-        double V = model->V[v];
-        QPair<double,double> xy = model->xy(v);
-        Q3CanvasEllipse *n = vfactory.newVnode(V, xy);
-        n->show();
+        QPair<int,int> ends = model->ends(e);
+        QPair<double,double> xy0 = model->xy(ends.first);
+        QPair<double,double> xy1 = model->xy(ends.second);
+        q=fabs((model->I[e]));
+        QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
+        //n->show();
     }
+    //setMouseTracking( TRUE );
 
-//#if 1    
-    int v = model->nV();
-    for (int w = 0; w < model->nW(); ++w)
-    {
-        double W = model->W[w];
-        QPair<double,double> xy = model->xy(v+w);
-        Q3CanvasEllipse *n = vfactory.newWnode(W, xy);
-        n->show();
-    }
-//#else   
- /*    ColorScale csDI;
+#if 0
+    ColorScale csDI;
     csDI.setRange(0,deltai_max);
     csDI.setColors(Qt::white,Qt::blue);
     NodeItemFactory difactory(pCanvas,&csDI,scale,offset);
@@ -1037,25 +1035,106 @@ void MainWindow::drawModelI()
         QCanvasEllipse *n = difactory.newWnode(fabs(total_i), xy);
         n->show();
     }
-//#endif
-*/
- 
+#endif
+    scene->update();
+    this->gv->update();
+}
+void MainWindow::drawModelR()
+{  
+    QGraphicsScene *scene = gv->scene();
+    gv->fitInView(scene->sceneRect(),Qt::KeepAspectRatioByExpanding);
+    scene->clear();
+
+    // Set view port
+    const double factor = 0.95;
+    double xscale = factor * scene->width()  / (model->xmax() - model->xmin());
+    double yscale = factor * scene->height() / (model->ymax() - model->ymin());
+    double scale = xscale < yscale ? xscale : yscale;
+    
+    QPair<double,double> offset;
+    offset.first = -0.5 * (model->xmax() - model->xmin()) * (1.0 - factor) / factor;
+    offset.second = -0.5 * (model->ymax() - model->ymin()) * (1.0 - factor) / factor;
+#if 0
+
+    double vmin = 1e300, vmax = -1e300;
+    for (int v = 0; v < model->nV(); ++v)
+    {
+        if (model->V[v] > vmax) vmax = model->V[v];
+        if (model->V[v] < vmin) vmin = model->V[v];
+    }
+    for (int w = 0; w < model->nW(); ++w)
+    {
+        double woltage = model->W[w];
+        if (woltage < vmin || woltage > vmax)
+        {
+            QString s;
+            s.sprintf("Got %lg at w=%i\n",woltage,w);
+            QMessageBox::warning(this, tr("W-voltage out of bound"),s,
+                QMessageBox::Ok,QMessageBox::Ok);
+            break;
+        }
+        if (woltage > vmax) vmax = woltage;
+        if (woltage < vmin) vmin = woltage;
+    }
+    csV.setRange(vmin,vmax);
+    csV.setColors(Qt::red,Qt::blue);
+
+    NodeItemFactory vfactory(scene,&csV,scale,offset);
+
+    for (int v = 0; v < model->nV(); ++v)
+    {
+        double V = model->V[v];
+        QPair<double,double> xy = model->xy(v);
+        QGraphicsEllipseItem *n = vfactory.newVnode(V, xy);
+        n->setZValue(128);
+        n->show();
+    }
+
+    int v = model->nV();
+    for (int w = 0; w < model->nW(); ++w)
+    {
+        double W = model->W[w];
+        QPair<double,double> xy = model->xy(v+w);
+        QGraphicsEllipseItem  *n = vfactory.newWnode(W, xy);
+        n->setZValue(128);
+        n->show();
+    }
+
+#endif
+
+    double Smin = 1e300, Smax = -1e300;
+    double Smin1 = 1e300;
+    double q;
+    for (int i = 0; i < model->nI(); ++i)
+    {   
+        q = (model->Sigma[i]);
+        if (fabs(q) > Smax) Smax = fabs(q); 
+        if (q < Smin1 && q>CUTOFF_SIGMA) Smin1 = q;
+        if (fabs(q) < Smin) 
+            Smin = fabs(q);
+    }
+        this->sigmaMin=Smin1; 
+        this->sigmaMin.updateDisplay();
+
+    csS.setRange(0, Smax);
+    csS.setColors(Qt::white,Qt::black);
+    csS.setExtraColor(0.01*Smax,QColor("#007f00"));
+    EdgeItemFactory ifactory(scene,&csS,scale,offset);
+
     for (int e = 0; e < model->nI(); ++e)
     {
         QPair<int,int> ends = model->ends(e);
         QPair<double,double> xy0 = model->xy(ends.first);
         QPair<double,double> xy1 = model->xy(ends.second);
-        q=fabs(model->I[e]);
-        if(q<0.00000000001) q=0.;
-        Q3CanvasLine *n = ifactory.newEdge( q , xy0, xy1 );
-        n->show();
+        q=fabs((model->Sigma[e]));
+        QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
+//        n->show();
     }
-    setMouseTracking( TRUE );
-#endif
-}
-void MainWindow::drawModelR()
-{  
-    clear();
+//    setMouseTracking( TRUE );
+    scene->update();
+    this->gv->update();
+
+//-----
 #if 0
     Q3Canvas *pCanvas = cv->canvas();
 
@@ -1134,35 +1213,37 @@ void MainWindow::drawModelR()
 }
 
 
-void
-MainWindow::computeModel()
+void MainWindow::computeModel()
 {  
-//    this->setModel();
     int r_type = this->typeResistor->checkedId();
     this->selectSigma(r_type);
     model->compute();
     QString s;
-    s.sprintf("%lg",model->rcond);
+    s.sprintf("RCond: %.3lg",model->rcond);
     double z = s.toDouble();
     this->dispCond->setText(s);
     this->dispCond->update();
 //    this->statusBar()->update();
-    s.sprintf("%lg",model->deltaI);
+    s.sprintf("dI: %.3lg",model->deltaI);
     z = s.toDouble();
     this->dispDeltaI->setText(s);
     this->dispDeltaI->update();
-    s.sprintf("%lg",model->ferr);
+    s.sprintf("Ferr: %.3lg",model->ferr);
     z = s.toDouble();
     this->dispFerr->setText(s);
     this->dispFerr->update();
-    s.sprintf("%lg",model->berr);
+    s.sprintf("Berr: %.3lg",model->berr);
     z = s.toDouble();
     this->dispBerr->setText(s);
     this->dispBerr->update();
-    s.sprintf("%lg",model->conductivity);
+    s.sprintf("G: %.3lg",model->conductivity);
     z = s.toDouble();
     this->dispConduct->setText(s);
     this->dispConduct->update();
+    s.sprintf("C: %.3lg",model->capacity);
+    z = s.toDouble();
+    this->dispCapac->setText(s);
+    this->dispCapac->update();
     this->statusBar()->update();
 //    this->setConductivity();
     this->r_c.updateDisplay();
@@ -1170,7 +1251,7 @@ MainWindow::computeModel()
     this->T.updateDisplay();
     this->dT.updateDisplay();
 //    this->conductivity.updateDisplay();
-    this->capacity.updateDisplay();
+//    this->capacity.updateDisplay();
     qApp->processEvents();
 }
 void MainWindow::computeOneR()
@@ -1181,29 +1262,34 @@ void MainWindow::computeOneR()
 //        model->conductivity.updateDisplay();
         QApplication::processEvents();
 }
-void 
-MainWindow::computeCapacityU()
+void MainWindow::computeCapacityU()
 {
     winPlotCU->show();
     winPlotCU->raise();
     winPlotCU->setActiveWindow();
     std::vector<double> data;
+//    for (double x = this->Umax; x <= this->Umin; x -= this->dU)
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
     {   
         this->U =x;
         if(this->flgStop) {this->flgStop=false; return;}
         this->computeModel();
-        this->setCapacity();
+//        this->setCapacity();
         data.push_back(x);
-        data.push_back(this->capacity);
+        data.push_back(model->capacity);
+            if(model->conductivity<NCUT*CUTOFF_SIGMA) 
+            {
+                this->numOfCurve++;
+                break;
+            }
+
         this->plotterCU->setCurveData(this->numOfCurve,data);
     }
     this->numOfCurve++;
     
 }
-
-void 
-MainWindow::setCapacity()
+/*
+void MainWindow::setCapacity()
 {
     int nv = model->nV(); // number of defined nodes
     int nw = model->nW(); // number of undefined nodes
@@ -1223,35 +1309,39 @@ MainWindow::setCapacity()
         nt=0;
         for (int v = 0; v < nv + nw; ++v)  
         {
-            if(t[v] > imax * 1e-7) 
+            if(t[v] > imax * 1e-3) 
                 nt++;
         }
 
         this->capacity = double(nt)/double(nv+nw);
 
-}
-void 
-MainWindow::computeCapacityT()
+}*/
+void MainWindow::computeCapacityT()
 {
     winPlotCT->show();
     winPlotCT->raise();
     winPlotCT->setActiveWindow();
     std::vector<double> data;
-    for (double x = this->Tmin; x <= this->Tmax; x += this->dT)
+    for (double x = this->Tmax; x >= this->Tmin; x -= this->dT)
+//    for (double x = this->Tmin; x <= this->Tmax; x += this->dT)
     {   
         this->T =x;
         if(this->flgStop) {this->flgStop=false; return;}
         this->computeModel();
-        this->setCapacity();
+ //       this->setCapacity();
         data.push_back(x);
-        data.push_back(this->capacity);
+        data.push_back(model->capacity);
+            if(model->conductivity<NCUT*CUTOFF_SIGMA) 
+            {
+                this->numOfCurve++;
+                break;
+            }
         this->plotterCT->setCurveData(this->numOfCurve,data);
     }
     this->numOfCurve++;
     }
 
-void 
-MainWindow::computeRrc()
+void MainWindow::computeRrc()
 {
     winPlotT->show();
     winPlotT->raise();
@@ -1273,8 +1363,7 @@ MainWindow::computeRrc()
     }
     this->numOfCurve++;
 }
-void 
-MainWindow::computeRU1()
+void MainWindow::computeRU1()
 {
     std::vector<double> data;
     winPlotU->show();
@@ -1297,14 +1386,14 @@ MainWindow::computeRU1()
    
     this->numOfCurve++;
 }
-void
-MainWindow::computeRU()
+void MainWindow::computeRU()
 {
     winPlotU->show();
     winPlotU->raise();
     winPlotU->setActiveWindow();
 
     std::vector<double> data;
+//    for (double x = this->Umax; x <= this->Umin; x -= this->dU)
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
     {   this->U =x;
         if(this->flgStop) {this->flgStop=false; return;}
@@ -1312,26 +1401,144 @@ MainWindow::computeRU()
 
             data.push_back(x);
             data.push_back(model->conductivity);
+            if(model->conductivity<NCUT*CUTOFF_SIGMA) 
+            {
+                this->numOfCurve++;
+                break;
+            }
+
             this->plotterU->setCurveData(this->numOfCurve,data);
     }
+    this->numOfCurve++;
+}
+void MainWindow::compute_pSigma()
+{
+    winPlotU->show();
+    winPlotU->raise();
+    winPlotU->setActiveWindow();
+    std::vector<double> data;
+    int r_type = this->typeResistor->checkedId();
+    this->selectSigma(r_type);
+    double Smin = 1e300, Smax = -1e300;
+    double q;
+    for (int i = 0; i < model->nI(); ++i)
+    {   
+        q = (model->Sigma[i]);
+        if (fabs(q) > Smax&&q!=this->sigmaU) Smax = fabs(q); 
+//        if (fabs(q) < Smin&&q!=CUTOFF_SIGMA) Smin = fabs(q);
+        if (fabs(q) < Smin) Smin = fabs(q);
+    }
+    int nS=201;
+    Q3MemArray<double> pS( nS );
+    pS.fill(0.0);
+    double dS=(Smax-Smin)/(nS-1);
+    int e;
+    int ni=model->nI();
+        for (int i = 0; i < model->nI(); ++i)
+        {   
+            
+            q = (model->Sigma[i]);
+            if(q!=this->sigmaU) 
+//            if(q!=this->sigmaU&&q!=CUTOFF_SIGMA) 
+            {
+                e=int((q-Smin)/dS);
+        if (e < 0 || e > nS-1)
+        {
+            QString s;
+            s.sprintf("Got %i at i=%i\n",e,i);
+            QMessageBox::warning(this, tr("e out of bound"),s,
+                QMessageBox::Ok,QMessageBox::Ok);
+            break;
+        }
+                pS[e]=pS[e]+1; 
+            }
+        }
+        double sum=0.;
+        int isum=ni-6*(this->rows)-4;
+        for (int i = 0; i < nS; ++i)
+        {   
+            double x=Smin+i*dS+0.5*dS;
+            data.push_back(x);
+            double p=pS[i]/isum;
+            sum=sum+p;
+            data.push_back(p);
+//            data.push_back(sum);
+            this->plotterU->setCurveData(this->numOfCurve,data);
+        }
+    this->numOfCurve++;
+}
+
+void MainWindow::compute_SumpSigma()
+{
+    winPlotU->show();
+    winPlotU->raise();
+    winPlotU->setActiveWindow();
+    std::vector<double> data;
+    int r_type = this->typeResistor->checkedId();
+    this->selectSigma(r_type);
+    double Smin = 1e300, Smax = -1e300;
+    double q;
+    for (int i = 0; i < model->nI(); ++i)
+    {   
+        q = (model->Sigma[i]);
+        if (fabs(q) > Smax&&q!=this->sigmaU) Smax = fabs(q); 
+//        if (fabs(q) < Smin&&q!=CUTOFF_SIGMA) Smin = fabs(q);
+        if (fabs(q) < Smin) Smin = fabs(q);
+    }
+    int nS=201;
+    Q3MemArray<double> pS( nS );
+    pS.fill(0.0);
+    double dS=(Smax-Smin)/(nS-1);
+    int e;
+    int ni=model->nI();
+        for (int i = 0; i < model->nI(); ++i)
+        {   
+            
+            q = (model->Sigma[i]);
+            if(q!=this->sigmaU) 
+//            if(q!=this->sigmaU&&q!=CUTOFF_SIGMA) 
+            {
+                e=int((q-Smin)/dS);
+        if (e < 0 || e > nS-1)
+        {
+            QString s;
+            s.sprintf("Got %i at i=%i\n",e,i);
+            QMessageBox::warning(this, tr("e out of bound"),s,
+                QMessageBox::Ok,QMessageBox::Ok);
+            break;
+        }
+                pS[e]=pS[e]+1; 
+            }
+        }
+        double sum=0.;
+        int isum=ni-6*(this->rows)-4;
+        for (int i = 0; i < nS; ++i)
+        {   
+            double x=Smin+i*dS+0.5*dS;
+            data.push_back(x);
+            double p=pS[i]/isum;
+            sum=sum+p;
+            data.push_back(sum);
+            this->plotterU->setCurveData(this->numOfCurve,data);
+        }
     this->numOfCurve++;
 }
 
 
 
 void MainWindow::stopCalc()
-    {
+{
     this->flgStop=true;
-    }
+}
 
-void
-MainWindow::computeRT1()
+void MainWindow::computeRT1()
 {
     winPlotT->show();
     winPlotT->raise();
 //    winPlotT->setActiveWindow();
 //    winPlotT->activateWindow();
     std::vector<double> data;
+//    for (double x =this->Tmax; x <= this->Tmin; x -= dT)
     for (double x =this->Tmin; x <= this->Tmax; x += dT)
     {   
         this->T=x;
@@ -1347,14 +1554,14 @@ MainWindow::computeRT1()
     }
     this->numOfCurve++;
 }
-void
-MainWindow::computeRT()
+void MainWindow::computeRT()
 {
     winPlotT->show();
     winPlotT->raise();
     winPlotT->setActiveWindow();
     std::vector<double> data;
-    for (double x = this->Tmin; x <= this->Tmax; x += dT)
+    for (double x = this->Tmax; x >= this->Tmin; x -= dT)
+//    for (double x = this->Tmin; x <= this->Tmax; x += dT)
     {   this->T=x;
         if(this->flgStop) 
         {
@@ -1362,22 +1569,22 @@ MainWindow::computeRT()
             return;
         }
         this->computeModel();
-//        y=6.28*y;
-//        if (y>CUTOFF_SIGMA) {
-            //y=log10(y);
+ //       double y=log10(model->conductivity);
+        double y=model->conductivity;
         data.push_back(this->T);
-        data.push_back(model->conductivity);
-        this->plotterT->setCurveData(this->numOfCurve,data);
-//        }
-//        if(this->T<1.2) dT=0.1;
-//        else dT=0.2;
+        data.push_back(y);
+            if(model->conductivity<NCUT*CUTOFF_SIGMA) 
+            {
+                this->numOfCurve++;
+                break;
+            }
+            this->plotterT->setCurveData(this->numOfCurve,data);
     }
     this->numOfCurve++;
 }
 
 
-void
-MainWindow::myMouseMoveEvent(QMouseEvent *e)
+void MainWindow::myMouseMoveEvent(QMouseEvent *e)
 {
     static int processing;
     static QLabel *label;
@@ -1428,17 +1635,17 @@ void MainWindow::randomizeSigma_1()
         }
     }
 }
-    
 double MainWindow::singleSigmaT0(double E, double r, double rEx, double EFc)
 {
   double Ey, V, rr;
   double exp0, G0,dG;
   double Delta_r, AA, BB, alpha;
-//  const double RC=300.;//nm
-  const double RMIN=200;//150.;//nm
-  const double RMAX=400;//450.;//nm
+//  const double RMIN=200;//было//nm
+//  const double RMAX=400;//было//nm
+  const double RMIN=250;//стало//nm
+  const double RMAX=350;//стало//nm
   const double E0=560.;//meV
-  if(E<=0) return CUTOFF_SIGMA;
+  if(E<=0) return 0;//CUTOFF_SIGMA;
   Delta_r=20;//15;//13;//15;//0.5*RC/sqrt(2*U/EF-1.);
   rr=0.5*(RMIN+r*(RMAX-RMIN))/Delta_r;
   rr=rr*rr;
@@ -1449,7 +1656,8 @@ double MainWindow::singleSigmaT0(double E, double r, double rEx, double EFc)
   Ey=(2/Delta_r)*sqrt(2*E0*this->U*AA/BB);
   if((V+0.5*Ey)>EFc) 
   {
-  Delta_r=20+1.5*(V+0.5*Ey-EFc);//0.5*RC/sqrt(2*U/EF-1.);
+  Delta_r=20+(V+0.5*Ey-EFc);
+//  Delta_r=20+1.5*(V+0.5*Ey-EFc);//было
 //  Delta_r=15+(V+0.5*Ey-EF)*0.6;//0.5*RC/sqrt(2*U/EF-1.);
 //  Delta_r=15+(V+0.5*Ey-EF)*(V+0.5*Ey-EF)*0.01;//0.5*RC/sqrt(2*U/EF-1.);
   rr=0.5*(RMIN+r*(RMAX-RMIN))/Delta_r;
@@ -1472,7 +1680,7 @@ double MainWindow::singleSigmaT0(double E, double r, double rEx, double EFc)
 //      if(alpha>700) return G0;
 //      else if(alpha<-700) dG=0.;
 //          else dG=1./(1+exp(alpha));
-  while(dG>CUTOFF_SIGMA) {
+  while(dG>1e-15){//CUTOFF_SIGMA) {
   G0=G0+dG;
   alpha=alpha+6.2832*Ey/rEx;
   dG=1./(1+exp(alpha));
@@ -1484,7 +1692,8 @@ double MainWindow::singleSigmaT0(double E, double r, double rEx, double EFc)
 //if(G0<CUTOFF_SIGMA)  return G0;}
 
 double MainWindow::singleSigma(double r, double r1)
-{   double Gtot, E,dE, Emin,csh,sum,sumt,alpha,Ec;
+{   
+    double Gtot, E,dE, Emin,csh,sum,sumt,alpha,Ec;
     double kT=this->T;
     dE=(10.*kT)/100.;
     if(dE>=0.6) dE=0.5;
@@ -1495,7 +1704,7 @@ double MainWindow::singleSigma(double r, double r1)
     if(kT==0) 
     {
       if(Ec>0)  Gtot=singleSigmaT0(Ec,r,r1,Ec);
-      else Gtot=CUTOFF_SIGMA;
+ //     else Gtot=CUTOFF_SIGMA;
     }
     else
     {   Gtot=0;
@@ -1517,8 +1726,7 @@ double MainWindow::singleSigma(double r, double r1)
   else 
       return Gtot;
 }
-        
-
+     
 void MainWindow::randomizeSigma_2()
 {   double x1,x2;
    Q3MemArray<double> t( model->nI() );

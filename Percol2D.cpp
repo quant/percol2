@@ -482,7 +482,7 @@ void Percol2D::compute()
         else
             this->I[i] += this->Sigma[i] * this->W[ends.second - nv];
     }
-////////////
+//----------------------------------
     double imax = -1e300;
     double q;
     for (int i = 0; i < ni; ++i)
@@ -509,7 +509,27 @@ void Percol2D::compute()
             (xy0.first==0&&xy1.first==1||xy0.first==1&&xy1.first==0)) I2=this->I[i];
     }
        conductivity = fabs(I1+I2)/2;
-//     this->ferr = fabs(I1)/2;
+//--------------CAPACITY----------------
+       {     
+        Q3MemArray<double> t( nv+nw );
+        int nt;
+        t.fill(0.0);
+        for (int i = 0; i < ni; ++i)
+        {   
+            double q = fabs(this->I[i]);
+            QPair<int,int> ends = this->ends(i);
+            t[ends.first] += q;
+            t[ends.second] += q;
+        }
+        nt=0;
+        for (int v = 0; v < nv + nw; ++v)  
+        {
+            if(t[v] > imax * 1e-3) 
+                nt++;
+        }
+        capacity = double(nt)/double(nv+nw);
+       }
+//--------------------------
 
     for (int w = 0; w < nw; ++w)
     {

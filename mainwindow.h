@@ -27,7 +27,7 @@ private slots:
     void computeModel();
     void computeOneR();
 //    void setConductivity();
-    void setCapacity();
+//    void setCapacity();
     void clear();
     void init();
     void myMouseMoveEvent(QMouseEvent *);
@@ -38,6 +38,8 @@ private slots:
     void computeRU();
     void computeCapacityU();
     void computeCapacityT();
+    void compute_pSigma();
+    void compute_SumpSigma();
     void computeRU1();
     void computeRrc();
     void computeRT();
@@ -86,7 +88,8 @@ private:
     Plotter *plotterCU;
     std::vector<double> plotdata;
     QLabel *dispCond; // Display of condition number of last computation
-    QLabel *dispConduct; // Display of condition number of last computation
+    QLabel *dispCapac; // Display of capacity value of last computation
+    QLabel *dispConduct; // Display of conductivity value of last computation
     QLabel *dispFerr; // Display of ferr
     QLabel *dispBerr; // Display of berr
     QLabel *dispDeltaI; // Display of deltaI
