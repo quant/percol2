@@ -9,16 +9,47 @@
 #include <map>
 using namespace std;
 
-//Plotter::Plotter(QWidget *parent, const char *name, Qt::WFlags flags)
-//: QWidget(parent, name, flags | Qt::WNoAutoErase)
+void Plotter::moveButtons()
+{
+    const int sep = 1;
+    int lx = sep;
+
+    zoomAllButton->move(lx, sep); 
+    lx += zoomAllButton->width() + sep;
+
+    zoomInButton->move(lx, sep); 
+    lx += zoomInButton->width() + sep;
+
+    zoomOutButton->move(lx, sep); 
+    lx += zoomOutButton->width() + sep;
+
+    scaleXButton->move(lx, sep); 
+    lx += scaleXButton->width() + sep;
+
+    scaleYButton->move(lx, sep); 
+    lx += scaleYButton->width() + sep;
+}
+
 Plotter::Plotter(QWidget *parent, Qt::WindowFlags flags)
 : QWidget(parent, flags)
-{
+{   
     setBackgroundRole(QPalette::Text);
     setAutoFillBackground ( true );
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setFocusPolicy(Qt::StrongFocus);
     rubberBandIsShown = false;
+
+    scaleXButton = new QToolButton(this);
+    scaleXButton->setIcon(QIcon("images/sizeh.png"));
+    scaleXButton->adjustSize();
+    scaleXButton->show();
+    connect(scaleXButton, SIGNAL(clicked()), this, SLOT(scaleX()));
+
+    scaleYButton = new QToolButton(this);
+    scaleYButton->setIcon(QIcon("images/sizev.png"));
+    scaleYButton->adjustSize();
+    scaleYButton->show();
+    connect(scaleYButton, SIGNAL(clicked()), this, SLOT(scaleY()));
 
     zoomInButton = new QToolButton(this);
     zoomInButton->setIcon(QIcon("images/zoomin.png"));
@@ -36,14 +67,6 @@ Plotter::Plotter(QWidget *parent, Qt::WindowFlags flags)
     zoomAllButton->show();
     connect(zoomAllButton, SIGNAL(clicked()), this, SLOT(zoomAll()));
 
-
-//    eraseButton = new QToolButton(this);
-//    eraseButton->setIconSet(QPixmap::fromMimeSource("images/erase.png"));
-//    eraseButton->adjustSize(); 
-//    eraseButton->show();
-//    connect(eraseButton, SIGNAL(clicked()), this, SLOT(clearAll()));
-
-
     setPlotSettings(PlotSettings());
 }
 
@@ -52,6 +75,8 @@ void Plotter::setPlotSettings(const PlotSettings &settings)
     zoomStack.resize(1);
     zoomStack[0] = settings;
     curZoom = 0; 
+    yScale=0;
+    xScale=0;
     zoomInButton->hide();
     zoomOutButton->hide();
     refreshPixmap();
@@ -72,6 +97,23 @@ void Plotter::zoomOut()
         zoomInButton->show();
         refreshPixmap();
     }
+}
+
+void Plotter::scaleX()
+{
+        xScale++;
+        if(xScale==3) xScale=0;
+    this->captureBoundsToSettings();
+        refreshPixmap();
+}
+
+void Plotter::scaleY()
+{
+        yScale++;
+        if(yScale==2) yScale=0;
+        this->captureBoundsToSettings();
+        refreshPixmap();
+   
 }
 void Plotter::zoomIn()
 {
@@ -102,10 +144,16 @@ void Plotter::captureBoundsToSettings()
         int maxPoints = data.size()/2;
         for (int i=0; i<maxPoints; ++i)
         {
-            if (data[2*i] < xmin) xmin = data[2*i];
-            if (data[2*i] > xmax) xmax = data[2*i];
-            if (data[2*i+1] < ymin) ymin = data[2*i+1];
-            if (data[2*i+1] > ymax) ymax = data[2*i+1];
+            double xd=data[2*i];
+            double yd=data[2*i+1]; 
+            if(yScale==1) yd=log10(yd);
+            if(xScale==1) xd=1./xd;
+           if(xScale==2) xd=log10(xd);
+
+            if (xd < xmin) xmin = xd;
+            if (xd > xmax) xmax = xd;
+            if (yd < ymin) ymin = yd;
+            if (yd > ymax) ymax = yd;
             updated = 1;
         }
 
@@ -123,7 +171,6 @@ void Plotter::captureBoundsToSettings()
 
 void Plotter::setCurveData(int id, const CurveData &data)
 {
-//    this->curveMap[id].erase();
     this->curveMap[id] = data;
     this->captureBoundsToSettings();
     refreshPixmap();
@@ -144,13 +191,10 @@ QSize Plotter::sizeHint() const
 }
 void Plotter::paintEvent(QPaintEvent *event)
 {
-//old//    Q3MemArray<QRect> rects = event->region().rects();
     QVector<QRect> rects = event->region().rects();
     QPainter painter(this);
    for(int i=0; i<(int)rects.size();++i)
-//        bitBlt(this, rects[i].topLeft(), &pixmap, rects[i]);
         painter.drawImage(rects[i].topLeft(), pixmap.toImage(), rects[i]);
-//    QPainter painter(this);
     if(rubberBandIsShown){
         painter.setPen(colorGroup().light());
         painter.drawRect(rubberBandRect.normalize());
@@ -164,9 +208,7 @@ void Plotter::paintEvent(QPaintEvent *event)
 }
 void Plotter::resizeEvent(QResizeEvent *)
 {
-    int x = width() -(zoomInButton->width()+zoomOutButton->width()+10);
-    zoomInButton->move(x,5);
-    zoomOutButton->move(x+zoomInButton->width()+5,5);
+    moveButtons();
     refreshPixmap();
 } 
 
@@ -190,6 +232,12 @@ void Plotter::mouseMoveEvent(QMouseEvent *event)
         updateRubberBandRegion();
     }
 }
+void Plotter::enterEvent ( QEvent * event )
+{
+    setFocus();
+    QWidget::enterEvent(event);
+}
+
 void Plotter::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton)
@@ -201,7 +249,6 @@ void Plotter::mouseReleaseEvent(QMouseEvent *event)
         if(rect.width()<4||rect.height()<4)
             return;
         rect.moveBy(-Margin, -Margin);
-//Qt4//        rect.translate(-Margin, -Margin);
 
         PlotSettings prevSettings = zoomStack[curZoom];
         PlotSettings settings;
@@ -225,6 +272,12 @@ void Plotter::keyPressEvent(QKeyEvent *event)
         break;
     case Qt::Key_Delete:
         clearAll();
+        break;
+//    case Qt::Key_Home:
+//        yScale++;
+//        if(yScale==2) yScale=0;
+//        refreshPixmap();
+//        drawCurves();
         break;
     case Qt::Key_Insert:
         savePlotAs();
@@ -331,12 +384,16 @@ void Plotter::drawCurves(QPainter *painter)
         int numPoints=0;
         int maxPoints = data.size()/2;
         QPolygon points(maxPoints);
-//        Q3PointArray points(maxPoints);
 
 
         for (int i=0; i<maxPoints; ++i){
-            double dx = data[2*i]-settings.minX;
-            double dy = data[2*i+1]-settings.minY;
+            double xd=data[2*i];
+            double yd=data[2*i+1]; 
+            if(yScale==1) yd=log10(yd);
+            if(xScale==1) xd=1./xd;
+            if(xScale==2) xd=log10(xd);
+            double dx = xd-settings.minX;
+            double dy = yd-settings.minY;
             double x = rect.left()+(dx*(rect.width()-1)/settings.spanX());
             double y = rect.bottom()-(dy*(rect.height()-1)/settings.spanY());
             if(fabs(x)<32768&&fabs(y)<32768){
@@ -381,16 +438,50 @@ void PlotSettings::adjust()
 void PlotSettings::adjustAxis(double &min, double &max, int &numTicks)
 {
     const int MinTicks = 4;
-    double grossStep = (max-min)/MinTicks;
-    double step = pow(10.0, floor(log10(grossStep)));
-    if(5*step<grossStep)
-        step *=5;
-    else if (2*step<grossStep)
-        step *=2;
+//    double grossStep = (max-min)/MinTicks;
+    double range = nicenum(max-min,0); 
+    double step = nicenum(range/(MinTicks-1),1);
+//    double step = pow(10.0, floor(log10(grossStep)));
+//    if(5*step<grossStep)
+//        step *=5;
+//    else if (2*step<grossStep)
+//        step *=2;
     numTicks = (int)(ceil(max/step)-floor(min/step));
     min = floor(min/step)*step;
     max = ceil(max/step)*step;
 }
+double PlotSettings::nicenum(double x, int round)
+{
+    int expv;				/* exponent of x */
+    double f;				/* fractional part of x */
+    double nf;				/* nice, rounded fraction */
+
+    expv = floor(log10(x));
+    f = x/expt(10., expv);		/* between 1 and 10 */
+    if (round)
+	if (f<1.5) nf = 1.;
+	else if (f<3.) nf = 2.;
+	else if (f<7.) nf = 5.;
+	else nf = 10.;
+    else
+	if (f<=1.) nf = 1.;
+	else if (f<=2.) nf = 2.;
+	else if (f<=5.) nf = 5.;
+	else nf = 10.;
+    return nf*expt(10., expv);
+}
+double PlotSettings::expt(double a, int n)
+{
+    double x;
+
+    x = 1.;
+    if (n>0) for (; n>0; n--) x *= a;
+    else for (; n<0; n++) x /= a;
+    return x;
+}
+
+
+
 bool Plotter::savePlotAs()
 {
     //QString fn = Q3FileDialog::getSaveFileName( QString::null, QString::null, this );

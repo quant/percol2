@@ -30,6 +30,8 @@ public:
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
 public slots:
+    void scaleX();
+    void scaleY();
     void zoomIn();
     void zoomOut();
     void zoomAll();
@@ -42,7 +44,9 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event);
     void keyPressEvent(QKeyEvent *event);
     void wheelEvent(QWheelEvent *event);
+    void enterEvent(QEvent *event);
 private: 
+    void moveButtons();
     void updateRubberBandRegion();
     void refreshPixmap();
     void drawGrid(QPainter *painter);
@@ -53,9 +57,11 @@ private:
     QToolButton *zoomOutButton;
     QToolButton *zoomAllButton;
     QToolButton *eraseButton;
+    QToolButton *scaleXButton;
+    QToolButton *scaleYButton;
     std::map<int, CurveData> curveMap;
     std::vector<PlotSettings> zoomStack;
-    int curZoom;
+    int curZoom,yScale,xScale;
     bool rubberBandIsShown;
     bool savePlot();
     bool savePlotAs();
@@ -80,6 +86,9 @@ public:
     int numYTicks;
 private:
     void adjustAxis(double &min, double &max, int &numTicks);
+    double nicenum(double x, int round);
+    double expt(double a, int n);
+
 };
 
 #endif /*PLOTTER_H_INCLUDED*/
