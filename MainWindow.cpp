@@ -1184,6 +1184,7 @@ void MainWindow::computeModel()
 }
 void MainWindow::computeOneR()
 {  
+//        model->conductivity=singleSigma(this->rand);
         model->conductivity=singleSigma(this->rand);
     QString s;
     s.sprintf("G: %.3lg",model->conductivity);
@@ -1304,19 +1305,25 @@ void MainWindow::computeRU1()
     winPlotU->raise();
     winPlotU->setActiveWindow();
     int G_type = this->typeCond->currentIndex();
-    if(G_type==0) computeEFU();
-//    if(G_type!=4) computeEFU();
+        if(G_type!=4) 
+    {
+        computeEFU();
+        double EFTU=this->EFUarray[0];
+        if(EFTU==0) return;
+    }
+
     int j=0;
 
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
     {
         this->U = x;
-          if(G_type!=0) this->EFT=EF0;
-//        if(G_type==4) this->EFT=EF0;
+//          if(G_type!=0) this->EFT=EF0;
+        if(G_type==4) this->EFT=EF0;
         else
         {
         double EFTU=this->EFUarray[j];
         this->EFT=EFTU;
+        if(EFTU==0) break;
         j++;
         }
         if(this->flgStop) 
@@ -1326,10 +1333,11 @@ void MainWindow::computeRU1()
         }
         computeOneR();
         data.push_back(x);
-        double y=Vbarrier(this->rand);//model->conductivity;
-//        double y=model->conductivity;
+//        double y=Vbarrier(this->rand);//model->conductivity;
+        double y=model->conductivity;
+        y=6.28*y;
         data.push_back(y);
-            this->plotterU->setCurveData(this->numOfCurve,data);
+        this->plotterU->setCurveData(this->numOfCurve,data);
     }
    
     this->numOfCurve++;
@@ -1340,21 +1348,25 @@ void MainWindow::computeRU()
     winPlotU->raise();
     winPlotU->setActiveWindow();
     int G_type = this->typeCond->currentIndex();
-    if(G_type==0) computeEFU();
-//    if(G_type!=4) computeEFU();
+        if(G_type!=4) 
+    {
+        computeEFU();
+        double EFTU=this->EFUarray[0];
+        if(EFTU==0) return;
+    }
     int j=0;
     std::vector<double> data;
-//    for (double x = this->Umax; x <= this->Umin; x -= this->dU)
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
     {   this->U =x;
 
-        if(G_type!=0) this->EFT=EF0;
-//        if(G_type==4) this->EFT=EF0;
+//        if(G_type!=0) this->EFT=EF0;
+        if(G_type==4) this->EFT=EF0;
         else
         {
         double EFTU=this->EFUarray[j];
         this->EFT=EFTU;
         j++;
+        if(EFTU==0) break;
         }
         if(this->flgStop) {this->flgStop=false; return;}
         this->computeModel();
@@ -1548,26 +1560,39 @@ void MainWindow::computeEFU()
     {
         this->U=x;
         double Vd=Vdot();
-        this->EF=EF0+Vd-Vd0+Cg0*(this->U-Vg0);
-//    int NE=(this->EF+10*this->T-Vd)/dE;
-    int NE=(this->EF+20*this->T-Vd)/dE;
+        this->EF=EF0+Vd-Vd0+Cg0*(this->U-Vg0); 
+    int NE=(this->EF+40*this->T-Vd)/dE;
     this->AreaEf.resize(NE,0.0);
     sum=0;
+    EFT1=this->EF-1;//!!!!!!!!!!!!!!!!!!!!!!!!
     for (int i=0; i< NE; ++i)
     {
         E=dE*(i+1)+Vd;
         Area=AreaE(E)/10000;
         this->AreaEf[i]=Area;
         if(E<=this->EF) sum=sum+Area;
+    }  
+    if(sum==0) 
+    {
+            QString s;
+            s.sprintf("dot is empty at  U=%lg\n",x);
+            QMessageBox::warning(this, tr("Warning!!!"),s,
+                QMessageBox::Ok,QMessageBox::Ok);
+             j++;
     }
-
-        EFT0=this->EF-1.;
+    else
+    {
+        EFT0=EFT1;//this->EF-1.;//!!!!!!!!!!!!!!!!!
         sum1=computeSum(NE, dE, Vd, EFT0);
+    while(sum1>sum)
+    {
+    EFT0=EFT0-1;
+    sum1=computeSum(NE, dE, Vd, EFT0);
+    }
         sum10=sum1;
-        if(sum10>=sum) EFT1=EFT0-0.5;
-        else EFT1=EFT0+0.5;
+        EFT1=EFT0+1;
         sum11=computeSum(NE, dE, Vd, EFT1);
-        while(abs(sum11-sum)>0.01)
+        while(abs(sum11-sum)>0.001)
         {
             EFT2=EFT1-(sum11-sum)*(EFT1-EFT0)/(sum11-sum10);
             sum12=computeSum(NE, dE, Vd, EFT2);
@@ -1591,6 +1616,7 @@ void MainWindow::computeEFU()
 
         this->EFT=EFT1;
         this->EFT.updateDisplay();
+    }
     }
 
 }
@@ -1777,7 +1803,7 @@ void MainWindow::computeEFT()
     this->U=Ucur;
     double Vd=Vdot();
     this->EF=EF0+Vd-Vd0+Cg0*(this->U-Vg0);
-    int NE=(this->EF+20*this->Tmax-Vdot())/dE;
+    int NE=(this->EF+40*this->Tmax-Vdot())/dE;
     this->AreaEf.resize(NE,0.0);
     double sum, sum1, Area, sum10, sum11, sum12,x;
     int NT=1+(this->Tmax-this->Tmin)/this->dT;
@@ -1790,18 +1816,38 @@ void MainWindow::computeEFT()
         this->AreaEf[i]=Area;
         if(E<=this->EF) sum=sum+Area;
     }
+    if(sum==0) 
+    {       
+            QString s;
+            s.sprintf("dot is empty at  U=%lg\n",Ucur);
+            QMessageBox::warning(this, tr("Warning!!!"),s,
+                QMessageBox::Ok,QMessageBox::Ok);
+            return;
+    }
+    else
+    {
     int j=0;
+    EFT1=this->EF-1.;
     for(double kT=this->Tmax; kT>=this->Tmin; kT-=this->dT)
     {
         this->T=kT;
-        EFT0=this->EF-0.4*kT;
-              sum1=computeSum(NE, dE, Vd, EFT0);
+        EFT0=EFT1;//this->EF-1.;//!!!!!!!!!!!!!!!!!
+        sum1=computeSum(NE, dE, Vd, EFT0);
+    while(sum1>sum)
+    {
+    EFT0=EFT0-1;
+    sum1=computeSum(NE, dE, Vd, EFT0);
+    }
         sum10=sum1;
-        if(sum10>sum) EFT1=EFT0-0.5;
-          else EFT1=EFT0+0.5;//(EFT0+this->EF)/2;
-//      else EFT1=(EFT0+this->EF)/2;
-              sum11=computeSum(NE, dE, Vd, EFT1);
-        while(abs(sum11-sum)>0.01)
+        EFT1=EFT0+1;
+        sum11=computeSum(NE, dE, Vd, EFT1);
+        while(abs(sum11-sum)>0.001)
+//        EFT0=this->EF-0.4*kT;
+//              sum1=computeSum(NE, dE, Vd, EFT0);
+//        sum10=sum1;
+//        if(sum10>sum) EFT1=EFT0-0.5;
+//          else EFT1=EFT0+0.5;//(EFT0+this->EF)/2;
+//              sum11=computeSum(NE, dE, Vd, EFT1);
         {
             EFT2=EFT1-(sum11-sum)*(EFT1-EFT0)/(sum11-sum10);
             sum12=computeSum(NE, dE, Vd, EFT2);
@@ -1822,9 +1868,74 @@ void MainWindow::computeEFT()
         this->EFTarray[j]=EFT1;
         j++;
     }
-    this->numOfCurve++;
+    }
+//    this->numOfCurve++;
 
 }
+
+/*void MainWindow::computeRT1()
+{   
+    double Gtot, E,dE, Emin,csh,sum,alpha,Ec,Uc,V;
+    winPlotT->show();
+    winPlotT->raise();
+    winPlotT->setActiveWindow();
+    std::vector<double> data;
+    V=Vbarrier(this->rand);
+    Uc=Vdot();
+    double kT=this->T;
+    int G_type = this->typeCond->currentIndex();
+    if(G_type!=4) {
+    this->Tmax=kT;
+    this->Tmin=kT;
+    computeEFT();
+    double EFTU=this->EFTarray[0];
+    this->EFT=EFTU;
+    }
+    dE=0.1;//(20.*kT)/600.;
+//    dE=(14.*kT)/500.;
+    if(dE>=0.6) dE=0.5;
+    Ec=this->EFT;
+//    if(Ec<Uc) Ec=Uc+dE; //Это неправильно!!!
+//    double g0=cohU(Ec, this->Ey, r1, V, Uc);
+    double g0=sedlo(Ec, this->Ey, this->Ex, V);
+    if(kT==0) 
+    {
+//      if(Ec>Uc)  Gtot=cohU(Ec,this->Ey,r1,V,Uc);
+      if(Ec>Uc)  Gtot=sedlo(Ec, this->Ey,this->Ex, V);
+    }
+    else
+    {   Gtot=0;
+        double GTunnel=0.;
+        double GOver=0.;
+    Emin=Ec-10*kT;
+//    Emin=Ec-7*kT;
+    double sumt=0.;
+    double aa=0.5*dE/kT;
+        Emin=Uc+dE;
+        for(E=Emin; E<=Ec+40*kT; E+=dE){
+//        for(E=Emin; E<=Ec+7*kT; E+=dE){
+            alpha=0.5*(E-Ec)/kT;
+            csh=1./cosh(alpha);
+            sum=aa*csh*csh;
+            sumt=sumt+sum; 
+//            double g=cohU(E,this->Ey,r1,V,Uc);
+            double g=sedlo(E, this->Ey, this->Ex, V);
+            GTunnel+= this->gTun*sum;
+            GOver+= this->gOv*sum;
+            Gtot+=g*sum;
+        data.push_back(E);
+ //       data.push_back(sum);
+       data.push_back(g*sum);
+        this->plotterT->setCurveData(this->numOfCurve,data);
+        }
+//        Gtot=Gtot/sumt;
+//        Gtot=Gtot*exp(-2*6.2832*kT/r1)/sumt;
+//        GTunnel=GTunnel/sumt;
+//        GOver = GOver/sumt;
+    }
+    this->numOfCurve++;
+}
+*/
 
 void MainWindow::computeRT1()
 {
@@ -1835,7 +1946,12 @@ void MainWindow::computeRT1()
     int G_type = this->typeCond->currentIndex();//checkedId();
 //    if(G_type!=4&&G_type!=3) computeEFT();
 //    if(G_type==0) computeEFT();
-    if(G_type!=4) computeEFT();
+    if(G_type!=4) 
+    {
+        computeEFT();
+        double EFTU=this->EFTarray[0];
+        if(EFTU==0) return;
+    }
     int j=0;
     double Ub=Vbarrier(this->rand)+0.5*this->Ey;
     for (double x =this->Tmax; x >= this->Tmin; x -= dT)
@@ -1872,6 +1988,7 @@ void MainWindow::computeRT1()
     }
     this->numOfCurve++;
 }
+
 void MainWindow::computeRT()
 {
     winPlotT->show();
@@ -1881,7 +1998,12 @@ void MainWindow::computeRT()
     int G_type = this->typeCond->currentIndex();
 //    if(G_type==0) computeEFT();
 //    if(G_type!=4&&G_type!=3) computeEFT();
-    if(G_type!=4) computeEFT();
+    if(G_type!=4) 
+    {
+        computeEFT();
+        double EFTU=this->EFTarray[0];
+        if(EFTU==0) return;
+    }
     int j=0;
     for (double x = this->Tmax; x >= this->Tmin; x -= dT)
 //    for (double x = this->Tmin; x <= this->Tmax; x += dT)
@@ -1903,7 +2025,7 @@ void MainWindow::computeRT()
         //        double y=log10(6.28*model->conductivity);
         double y=model->conductivity;
 //        if (this->T>2) y=(this->cols)*y/(this->rows);
-//        y=6.28*y;
+        y=6.28*y;
 //        y=y/x;
         data.push_back(x);
         data.push_back(y);
@@ -1926,7 +2048,12 @@ void MainWindow::compute_pSigma()
     int G_type = this->typeCond->currentIndex();
 //    if(G_type==0) computeEFT();
 //    if(G_type!=4&&G_type!=3) computeEFT();
-    if(G_type!=4) computeEFT();
+    if(G_type!=4) 
+    {
+        computeEFT();
+        double EFTU=this->EFTarray[0];
+        if(EFTU==0) return;
+    }
     int j=0;
     for (double x = this->Tmax; x >= this->Tmin; x -= dT)
 //    for (double x = this->Tmin; x <= this->Tmax; x += dT)
@@ -2040,14 +2167,15 @@ if(G0>CUTOFF_SIGMA)  return G0;
 else return CUTOFF_SIGMA;
 }
 
-double MainWindow::sedlo(double E, double Ey, double Ex, double V)
-{ double  alpha,G0,g,exp0,EE, Ep;
+/*double MainWindow::sedlo(double E, double Ey, double Ex, double V)
+{ double  alpha,G0,g,exp0,EE, Ep,Uc;
+  Uc=Vdot();
   this->gTun=0;
   this->gOv=0;
   G0=0;
   EE=E-0.5*Ey-V;
   Ep=E-0.5*Ey;
-  while(Ep>0)
+  while(Ep>Uc)
   {
   alpha=-6.2832*EE/Ex;
   exp0=exp(alpha);
@@ -2061,6 +2189,52 @@ double MainWindow::sedlo(double E, double Ey, double Ex, double V)
 if(G0>CUTOFF_SIGMA)  return G0;
 else return CUTOFF_SIGMA;
 }
+*/
+double MainWindow::sedlo(double E, double Ey, double Ex, double V)
+{ double  alpha,G0,g,exp0,EE, Ep,Uc;
+  Uc=Vdot();
+  double a1=500;//nm
+  double Va=V-3;//meV
+  double a0=2/Ex*sqrt(E0*(V-Va));
+  double a2=a0/a1;
+  double U00=V-Va;
+  double U01=Va/(1-a2*a2);
+  this->gTun=0;
+  this->gOv=0;
+  G0=0;
+  EE=E-0.5*Ey-V;
+  Ep=E-0.5*Ey;
+  while(Ep>Uc)
+  {
+      if(Ep>Va)
+      {
+  alpha=-6.2832*EE/Ex;
+  exp0=exp(alpha);
+  g=1./(1+exp0);
+      }
+      else
+      {
+  double b0=sqrt(U00/(V-Ep));
+  double b1=a2*sqrt(U01/(U01-Ep));
+  double asinb0=asin(b0);
+  double asinb1=asin(b1);
+  double b2=1/(b0*b0);
+  double Z=-2*a0*sqrt(U00/E0)*(sqrt(b2-1)+asinb0*b2);
+  b2=1/(b1*b1);
+  Z=Z-2*a0*a2*sqrt(U01/E0)*((3.14159/2-asinb1)*b2-sqrt(b2-1));
+  g=exp(Z);
+      }
+  if(g<0.5) this->gTun+=g;
+  else this->gOv+=g;
+  G0+=g;
+  EE-=Ey;
+  Ep-=Ey;
+  }
+  return G0;
+//if(G0>CUTOFF_SIGMA)  return G0;
+//else return CUTOFF_SIGMA;
+}
+
 double MainWindow::Vbarrier(double r)
 {
   double BB,rr;
@@ -2079,31 +2253,6 @@ double MainWindow::Vdot(void)
             r1=r1/Delta_r;
             return 4*this->U/(1+r1*r1);
 }
-double MainWindow::singleSigmaT0(double E, double r, double rEx, double EFc)
-{
-  double Ey_c, V, rr,aEx, G0, AA, BB,Uc;
-  const double RMIN=200;//было//nm
-  const double RMAX=400;//было//nm
-//  const double RMIN=250;//стало//nm
-//  const double RMAX=350;//стало//nm
-//  if(E<=0) return 0;//CUTOFF_SIGMA;
-//  Delta_r=15;//15;//13;//15;//0.5*RC/sqrt(2*U/EF-1.);
-  rr=0.5*(RMIN+r*(RMAX-RMIN))/Delta_r;
-  rr=rr*rr;
-  AA=3*rr-1;
-  BB=(1+rr);
-//  V=2*this->U/BB;
-  V=Vbarrier(r);
-  Uc=Vdot();
-  BB=BB*BB*BB;  
-//  Ey_c=(2./Delta_r)*sqrt(2*E0*this->U*AA/BB);
-  Ey_c=this->Ey;
-//  G0=sedlo(E, Ey_c, rEx, V);
-  G0=cohU(E, Ey_c, rEx, V, Uc);
-if(G0>CUTOFF_SIGMA)  return G0;
-else return CUTOFF_SIGMA;}
-
-
 
 double MainWindow::singleSigma(double r)
 {   
@@ -2111,17 +2260,16 @@ double MainWindow::singleSigma(double r)
     V=Vbarrier(r);
     Uc=Vdot();
     double kT=this->T;
-    dE=(80.*kT)/600.;
-//    dE=(14.*kT)/500.;
+    dE=0.1;
     if(dE>=0.6) dE=0.5;
     Ec=this->EFT;
-    if(Ec<Uc) Ec=Uc+dE; 
 //    double g0=cohU(Ec, this->Ey, r1, V, Uc);
     double g0=sedlo(Ec, this->Ey, this->Ex, V);
     if(kT==0) 
     {
 //      if(Ec>Uc)  Gtot=cohU(Ec,this->Ey,r1,V,Uc);
       if(Ec>Uc)  Gtot=sedlo(Ec, this->Ey,this->Ex, V);
+      else Gtot=CUTOFF_SIGMA;
     }
     else
     {   Gtot=0;
@@ -2129,14 +2277,14 @@ double MainWindow::singleSigma(double r)
         double GOver=0.;
         int G_type = this->typeCond->currentIndex();//checkedId();
     Emin=Ec-40*kT;
-//    Emin=Ec-7*kT;
     double sumt=0.;
+    double aa=0.25*dE/kT;
     if(Emin<Uc) Emin=Uc+dE;
         for(E=Emin; E<=Ec+40*kT; E+=dE){
-//        for(E=Emin; E<=Ec+7*kT; E+=dE){
+//        for(E=Emin; E<=Ec+20*kT; E+=dE){
             alpha=0.5*(E-Ec)/kT;
             csh=1./cosh(alpha);
-            sum=0.25*csh*csh/kT;
+            sum=aa*csh*csh;
             sumt=sumt+sum; 
 //            double g=cohU(E,this->Ey,r1,V,Uc);
             double g=sedlo(E, this->Ey, this->Ex, V);
@@ -2144,10 +2292,6 @@ double MainWindow::singleSigma(double r)
             GOver+= this->gOv*sum;
             Gtot+=g*sum;
         }
-        Gtot=Gtot/sumt;
-//        Gtot=Gtot*exp(-2*6.2832*kT/r1)/sumt;
-        GTunnel=GTunnel/sumt;
-        GOver = GOver/sumt;
         if(G_type==1) Gtot=GTunnel;
         if(G_type==2) Gtot=GOver;
 //        double eps=0.0011*this->U-0.99;
@@ -2156,7 +2300,6 @@ double MainWindow::singleSigma(double r)
 //        double eps=0.0011*this->U-0.66;
 //        double eps=0.003*this->U-0.34;
         double eps=0.0037*this->U-0.48;
-//        if(G_type==3) Gtot=Gtot*exp(-eps/kT);
         if(G_type==3) Gtot=GOver+GTunnel*exp(-eps/kT);
 //    if(G_type==3) Gtot=Gtot-g0*(1-exp(-eps/kT));
 //    if(G_type==3) Gtot=Gtot-g0*(1-exp(-eps/kT));
