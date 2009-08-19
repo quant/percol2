@@ -450,11 +450,11 @@ void MainWindow::setModel()
 MainWindow::MainWindow(QWidget *parent, Qt::WFlags f)
 : randc(0.5), Exc(5.), Eyc(5.), i_Rcr(-1), 
 sigmaU(1000.0), flgStop(false),
-T(0.1), Tmin(0.1),Tmax(5.2), dT(0.1), //Gold(0.0),
-U(280), Umin(250.), Umax(300), dU(50.), 
+T(0), Tmin(0.1),Tmax(5.2), dT(0.1), //Gold(0.0),
+U(160), Umin(150.), Umax(300), dU(5.), 
 //U(950), Umin(200.), Umax(1500), dU(5.), 
-r_c(0.0), Ex(5.), Ey(5.), rand(0.5), EF(20),EFT(20.), QMainWindow(parent,f),
-rows(50), cols(50), numOfCurve(1), seed(0), model(0)
+r_c(0.0), Ex(10.), Ey(6.), rand(0.5), EF(20),EFT(20.), QMainWindow(parent,f),
+rows(30), cols(50), numOfCurve(1), seed(0), model(0)
 
 {
     this->initMenuBar(); 
@@ -2198,6 +2198,7 @@ double MainWindow::sedlo(double E, double Ey, double Ex, double V)
   Uc=Vdot();
   double a1=100;//80;//100;//500;//nm
   double Va=V-12.50;//meV
+  V=V+2*exp(-this->T/0.3);
   double a0=2/Ex*sqrt(E0*(V-Va));
   double a2=a0/a1;
   double U00=V-Va;
