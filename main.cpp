@@ -1,5 +1,5 @@
 #include <qtextcodec.h>
-#include "Percol2D.h"
+#include "percol2d.h"
 #include "mainwindow.h"
 #include <qapplication.h>
 

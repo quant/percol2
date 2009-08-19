@@ -8,8 +8,22 @@ DEPENDPATH += .
 INCLUDEPATH += .
 
 # Input
-HEADERS += mainwindow.h myparam.h Percol2D.h plotter.h
-SOURCES += main.cpp MainWindow.cpp myparam.cpp Percol2D.cpp plotter.cpp
+HEADERS += mainwindow.h myparam.h percol2d.h plotter.h
+SOURCES += main.cpp mainwindow.cpp myparam.cpp percol2d.cpp plotter.cpp
 #The following line was inserted by qt3to4
 QT +=  qt3support 
+win32 {
 include(percol.pri)
+}
+unix {
+LIBS += -lmkl_intel_lp64
+LIBS += -lmkl_intel_thread
+LIBS += -lmkl_core
+LIBS += -liomp5
+LIBS += -lpthread
+}
+
+# Local variables:
+# mode: makefile
+# End:
+

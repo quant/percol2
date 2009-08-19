@@ -1372,12 +1372,14 @@ void MainWindow::computeRU()
         this->computeModel();
 
             data.push_back(x);
-            data.push_back(model->conductivity);
-            if(model->conductivity<NCUT*CUTOFF_SIGMA) 
-            {
-                this->numOfCurve++;
-                break;
-            }
+        double y=model->conductivity;
+        y=6.28*y;
+        data.push_back(y);
+//            if(model->conductivity<NCUT*CUTOFF_SIGMA) 
+//            {
+//                this->numOfCurve++;
+//                break;
+//            }
 
             this->plotterU->setCurveData(this->numOfCurve,data);
     }
@@ -1976,6 +1978,7 @@ void MainWindow::computeRT1()
         }
         this->computeOneR();
         double y=model->conductivity;
+        y=6.28*y;
 //        y=y*exp((Ub-this->EFT)/x)/x;
 //        y=y*exp((Ub-this->EFT)/x);
 //        y=y/x;
@@ -2193,8 +2196,8 @@ else return CUTOFF_SIGMA;
 double MainWindow::sedlo(double E, double Ey, double Ex, double V)
 { double  alpha,G0,g,exp0,EE, Ep,Uc;
   Uc=Vdot();
-  double a1=500;//nm
-  double Va=V-3;//meV
+  double a1=100;//80;//100;//500;//nm
+  double Va=V-12.50;//meV
   double a0=2/Ex*sqrt(E0*(V-Va));
   double a2=a0/a1;
   double U00=V-Va;
@@ -2351,15 +2354,15 @@ void MainWindow::randomizeSigma_2()
             model->Sigma[i]=this->sigmaU;
         }
         else  {x1=model->Sigma[i];
-            x2=5;//4+2*t[i];
-            this->Ey=x2;
-            x3=5;//1+8*(1-x1);
-            this->Ex=x3;
+//            x2=5;//4+2*t[i];
+//            this->Ey=x2;
+//            x3=5;//1+8*(1-x1);
+//            this->Ex=x3;
         if(i==this->i_Rcr&&this->i_Rcr>0) {
             this->rand=x1;
             this->randc=x1;
-            this->Exc=x3;
-            this->Eyc=x2;
+//            this->Exc=x3;
+//            this->Eyc=x2;
         }
             if (x1 < this->r_c) model->Sigma[i] = CUTOFF_SIGMA;
             else model->Sigma[i] = singleSigma(x1);
@@ -2368,11 +2371,11 @@ void MainWindow::randomizeSigma_2()
         if(this->i_Rcr>0) 
         {
             int i=this->i_Rcr;
-            x3=this->Exc; 
-            x2=this->Eyc;
+//            x3=this->Exc; 
+//            x2=this->Eyc;
             x1=this->randc;
-            this->Ey=x2;
-            this->Ex=x3;
+//            this->Ey=x2;
+//            this->Ex=x3;
             this->rand=x1;
             double Vb=Vbarrier(x1);
 //            this->Ex=4+2*this->rand;

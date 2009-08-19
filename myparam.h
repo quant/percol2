@@ -1,3 +1,4 @@
+/* c++ */
 #ifndef myparam_h_included
 #define myparam_h_included
 
@@ -7,7 +8,7 @@ class MyParamD : public QObject
 {
     Q_OBJECT
 public:
-    MyParamD(double _v = 0) : v(_v), ledit(0) {}
+    MyParamD(double _v = 0) : ledit(0), v(_v) {}
     MyParamD& operator=(const MyParamD&);
     double& operator=(double d) { return v = d; }
     double& operator+=(double d) { return v += d; }
@@ -32,7 +33,7 @@ class MyParamI : public QObject
 {
     Q_OBJECT
 public:
-    MyParamI(int _v = 0) : v(_v), ledit(0) {}    
+    MyParamI(int _v = 0) : ledit(0), v(_v) {}
     int& operator=(int d) { return v = d; }
     int& operator+=(int d) { return v += d; }
     operator int() const { return v; }

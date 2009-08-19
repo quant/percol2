@@ -1,4 +1,4 @@
-#include "Percol2D.h"
+#include "percol2d.h"
 #include "mkl.h"
 #include <cassert>
 #include <qmessagebox.h>

@@ -1,3 +1,4 @@
+/* c++ */
 #ifndef MAINWINDOW_H_INCLUDED
 #define MAINWINDOW_H_INCLUDED
 #include <QtGui>
