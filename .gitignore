@@ -3,3 +3,6 @@ debug/*
 *.ncb
 *.suo
 *.vcproj*
+*.o
+moc_*
+
