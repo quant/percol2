@@ -25,6 +25,8 @@ public:
     // Defined nodes have numbers 0...nV()-1
     // Unknown nodes have numbers nV()...nV()+nW()-1
 
+    int index_of_Rcr() const; // returns the index of edge with max I*V
+
     // These functions define geometry and topology of the grid.
     // They are defined by the implementation of the model
     virtual int S(int i,int v) const = 0;

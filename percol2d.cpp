@@ -722,3 +722,28 @@ double PercolRect::xmax() const { return cols-1; }
 double PercolRect::ymax() const { return rows-1; }
 double PercolRect::xmin() const { return 0; }
 double PercolRect::ymin() const { return 0; }
+
+// returns the index of I with maximum I^2*R
+int Percol2D::index_of_Rcr() const
+{
+    double IV_max = -1e300;
+    int i_max = 0;
+    for (int i = 0; i < nI(); ++i)
+    {
+	double I_i = I[i];
+	QPair<int,int> ends_i = ends(i);
+	double V_i = ends_i.first < nV()
+	    ? V[ends_i.first]
+	    : W[ends_i.first - nV()];
+	V_i -= ends_i.second < nV()
+	    ? V[ends_i.second]
+	    : W[ends_i.second - nV()];
+	double IV_i = fabs(I_i * V_i);
+	if (IV_i > IV_max)
+	{
+	    IV_max = IV_i;
+	    i_max = i;
+	}
+    }
+    return i_max;
+}

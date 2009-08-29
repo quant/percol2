@@ -93,7 +93,7 @@ private:
     std::vector<double> EFTarray;
     std::vector<double> EFUarray;
     std::vector<double> AreaEf;
-    int numOfCurve,i_Rcr;
+    int numOfCurve;
     double gTun, gOv, Exc, Eyc, randc;//,Gold;
     bool flgStop; 
     QDialog *winPlotU;

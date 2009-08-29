@@ -11,7 +11,7 @@ const double E0=560.;//meV
 const double Vg0=50;
 const double Cg0=-0.06;//-0.05;//-0.04;
 const double EF0=20;
-double elementCr=1e+22;
+double elementCr = 1e+22;
 
 class ColorScale
 {
@@ -447,7 +447,7 @@ void MainWindow::setModel()
     model = new PercolRect(this->rows,this->cols);
 }
 MainWindow::MainWindow(QWidget *parent, Qt::WFlags f)
-: randc(0.5), Exc(5.), Eyc(5.), i_Rcr(-1), 
+: randc(0.5), Exc(5.), Eyc(5.), 
 sigmaU(1000.0), flgStop(false),
 T(0), Tmin(0.1),Tmax(5.2), dT(0.1), //Gold(0.0),
 U(160), Umin(150.), Umax(300), dU(5.), 
@@ -741,38 +741,7 @@ void MainWindow::drawModelA()
 
     NodeItemFactory vfactory(scene,&csV,scale,offset);
     vfactory.setBlobSize(2);//!!!
-    double Jmin = 1e300, Jmax = -1e300;
-    double q;
-    this->i_Rcr=-1;
-    int imaxold;
-    int imaxoldold;
-    for (int i = 0; i < model->nI(); ++i)
-    {   
-        q=(model->I[i])/(model->Sigma[i]);
-        q=(model->I[i])*q;//(model->I[i])/(model->Sigma[i]);
-        if (fabs(q) > Jmax&&model->Sigma[i]!=CUTOFF_SIGMA) 
-        {
-            Jmaxoldold=Jmaxold;
-            imaxoldold=imaxold;
-            Jmaxold=Jmax;
-            imaxold=this->i_Rcr;
-            Jmax = fabs(q); 
-            this->i_Rcr=i;
-        }
-        if (fabs(q) < Jmin&&model->Sigma[i]>CUTOFF_SIGMA) Jmin = fabs(q);
-
-    }
         
-        elementCr=model->Sigma[this->i_Rcr];
-        double Icr=model->I[this->i_Rcr];
-        this->sigmaMin=model->Sigma[this->i_Rcr];
-        this->sigmaMin.updateDisplay();
-        this->randomizeSigma_2();
-        csJ.setRange(Jmin, Jmax);
-        csJ.setColors(Qt::white,Qt::black);
-
-    EdgeItemFactory ifactory(scene,&csJ,scale,offset);
-
     for (int v = 0; v < model->nV(); ++v)
     {
         double V = model->V[v];
@@ -792,15 +761,6 @@ void MainWindow::drawModelA()
 //        n->show();
     }
 
-    for (int e = 0; e < model->nI(); ++e)
-    {   
-        QPair<int,int> ends = model->ends(e);
-        QPair<double,double> xy0 = model->xy(ends.first);
-        QPair<double,double> xy1 = model->xy(ends.second);
-        q=(model->I[e])/(model->Sigma[e]);
-        q=(model->I[e])*q;
-        if(fabs(q)<=Jmax)QGraphicsLineItem *n = ifactory.newEdge( fabs(q) , xy0, xy1 );
-    }
     scene->update();
     this->gv->update();
 //    setMouseTracking( TRUE );
@@ -891,7 +851,8 @@ void MainWindow::drawModelI()
     EdgeItemFactory ifactory(scene,&csI,scale,offset);
 
     //setMouseTracking( FALSE );
-    elementCr=fabs((model->I[this->i_Rcr]));
+    int i_Rcr = model->index_of_Rcr();
+    elementCr = fabs((model->I[ i_Rcr ]));
     for (int e = 0; e < model->nI(); ++e)
     {
         QPair<int,int> ends = model->ends(e);
@@ -1020,7 +981,6 @@ void MainWindow::drawModelR()
     csS.setColors(Qt::white,Qt::black);
 //    csS.setExtraColor(0.01*Smax,QColor("#007f00"));
     EdgeItemFactory ifactory(scene,&csS,scale,offset);
-    if(this->i_Rcr>0) elementCr=fabs((model->Sigma[this->i_Rcr]));
     for (int e = 0; e < model->nI(); ++e)
     {
         QPair<int,int> ends = model->ends(e);
@@ -2330,25 +2290,10 @@ void MainWindow::randomizeSigma_2()
 //            this->Ey=x2;
 //            x3=5;//1+8*(1-x1);
 //            this->Ex=x3;
-        if(i==this->i_Rcr&&this->i_Rcr>0) {
-            this->rand=x1;
-            this->randc=x1;
-        }
             if (x1 < this->r_c) model->Sigma[i] = CUTOFF_SIGMA;
             else model->Sigma[i] = singleSigma(x1);
         }     
     }
-        if(this->i_Rcr>0) 
-        {
-            int i=this->i_Rcr;
-            x1=this->randc;
-            this->rand=x1;
-            double Vb=Vbarrier(x1);
-            this->Ex.updateDisplay();
-            this->Ey.updateDisplay();
-            this->rand.updateDisplay();
-       
-        }
 }
 
 void MainWindow::selectSigma(int i)
