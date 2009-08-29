@@ -764,8 +764,6 @@ void MainWindow::drawModelA()
     }
         
         elementCr=model->Sigma[this->i_Rcr];
-//        elementCr=Jmaxold;//!!!!!!!!!!!!!!!!model->Sigma[this->i_Rcr];
-//        this->i_Rcr=imaxold;//!!!!!!!!!!!!!!!
         double Icr=model->I[this->i_Rcr];
         this->sigmaMin=model->Sigma[this->i_Rcr];
         this->sigmaMin.updateDisplay();
@@ -803,32 +801,6 @@ void MainWindow::drawModelA()
         q=(model->I[e])*q;
         if(fabs(q)<=Jmax)QGraphicsLineItem *n = ifactory.newEdge( fabs(q) , xy0, xy1 );
     }
-/*
-    {   int e=imaxold;
-        QPair<int,int> ends = model->ends(e);
-        QPair<double,double> xy0 = model->xy(ends.first);
-        QPair<double,double> xy1 = model->xy(ends.second);
-        q=(model->I[e])/(model->Sigma[e]);
-        q=(model->I[e])*q;//(model->I[e])/(model->Sigma[e]);
-        QGraphicsLineItem *n = ifactory.newEdge( fabs(q) , xy0, xy1 );
-    }
-    {   int e=imaxoldold;
-        QPair<int,int> ends = model->ends(e);
-        QPair<double,double> xy0 = model->xy(ends.first);
-        QPair<double,double> xy1 = model->xy(ends.second);
-        q=(model->I[e])/(model->Sigma[e]);
-        q=(model->I[e])*q;//(model->I[e])/(model->Sigma[e]);
-        QGraphicsLineItem *n = ifactory.newEdge( fabs(q) , xy0, xy1 );
-    }
-    {   int e=this->i_Rcr;
-        QPair<int,int> ends = model->ends(e);
-        QPair<double,double> xy0 = model->xy(ends.first);
-        QPair<double,double> xy1 = model->xy(ends.second);
-        q=(model->I[e])/(model->Sigma[e]);
-        q=(model->I[e])*q;//(model->I[e])/(model->Sigma[e]);
-        QGraphicsLineItem *n = ifactory.newEdge( fabs(q) , xy0, xy1 );
-    }
-    */
     scene->update();
     this->gv->update();
 //    setMouseTracking( TRUE );
@@ -2361,8 +2333,6 @@ void MainWindow::randomizeSigma_2()
         if(i==this->i_Rcr&&this->i_Rcr>0) {
             this->rand=x1;
             this->randc=x1;
-//            this->Exc=x3;
-//            this->Eyc=x2;
         }
             if (x1 < this->r_c) model->Sigma[i] = CUTOFF_SIGMA;
             else model->Sigma[i] = singleSigma(x1);
@@ -2371,14 +2341,9 @@ void MainWindow::randomizeSigma_2()
         if(this->i_Rcr>0) 
         {
             int i=this->i_Rcr;
-//            x3=this->Exc; 
-//            x2=this->Eyc;
             x1=this->randc;
-//            this->Ey=x2;
-//            this->Ex=x3;
             this->rand=x1;
             double Vb=Vbarrier(x1);
-//            this->Ex=4+2*this->rand;
             this->Ex.updateDisplay();
             this->Ey.updateDisplay();
             this->rand.updateDisplay();
