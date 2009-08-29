@@ -113,7 +113,7 @@ void MainWindow::initMenuBar()
     exitAction->setShortcut(tr("Ctrl+Q"));
     chooseFontAction->setShortcut(tr("Ctrl+F"));
     connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
-    connect(chooseFontAction, SIGNAL(clicked()), this, SLOT(chooseFont()));
+    connect(chooseFontAction, SIGNAL(activated()), this, SLOT(chooseFont()));
     connect(saveAction, SIGNAL(activated()), this, SLOT(saveAs()));
     
 
@@ -241,7 +241,6 @@ void MainWindow::initControlDockWindow()
                 typeCond->addItem(tr("Tunnel+Over-barrier G"));
                 typeCond->addItem(tr("G(E_F0)"));
                 typeCond->setCurrentIndex(0); 
-                connect(typeCond, SIGNAL(activated(int)),this, SLOT(setCurrentIndex(int)));           
  
                 hl->addWidget(b1);
                 hl->addWidget(b2);             
