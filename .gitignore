@@ -5,3 +5,5 @@ debug/*
 *.vcproj*
 *.o
 moc_*
+*~
+
