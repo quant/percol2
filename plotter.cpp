@@ -8,7 +8,7 @@
 #include <cmath>
 #include <map>
 using namespace std;
-
+#include <cstdio>
 void Plotter::moveButtons()
 {
     const int sep = 1;
@@ -279,6 +279,9 @@ void Plotter::keyPressEvent(QKeyEvent *event)
 //        refreshPixmap();
 //        drawCurves();
         break;
+    case Qt::Key_End:
+        openPlot();
+        break;
     case Qt::Key_Insert:
         savePlotAs();
         break;
@@ -339,6 +342,7 @@ void Plotter::drawGrid(QPainter *painter)
         width() - 2*Margin,height() - 2*Margin);
     PlotSettings settings = zoomStack[curZoom];
     QPen quiteDark = colorGroup().dark().light();
+ //   choke me;
     QPen light = colorGroup().light();
     for(int i = 0; i<=settings.numXTicks; ++i) 
     {
@@ -493,7 +497,37 @@ bool Plotter::savePlotAs()
     }
     return false;
 }
+bool Plotter::openPlot()
+ {
+     QString fileName = QFileDialog::getOpenFileName(this);
+     if (!fileName.isEmpty()) {
+         // read from file
+         QFile file(fileName);
 
+         if (!file.open(QIODevice::ReadOnly)) {
+              QMessageBox::information(this, tr("Unable to open file"),
+                 file.errorString());
+             return false;
+         }
+
+//         QTextStream out(&file);
+//         QString output = out.readAll();
+char buf[1024];
+std::vector<pair<double,double> > xy;
+double x,y;
+//file >> buf;
+//for (; !feof(file); ) {
+// file >> buf;
+//int n = sscanf(buf,"%lg %lg", &x, &y);
+//if (n == 2) xy.push_back(pair(x,y))
+//else break;
+//     }
+//setCurveData(this->numOfCurve,xy);
+         // display contents
+     file.close();
+    return TRUE;
+     }
+     }
 bool Plotter::savePlot()
 {
     if (this->curFileCurve.isEmpty())    {

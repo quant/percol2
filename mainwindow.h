@@ -10,7 +10,7 @@
 
 //---------------------------------------------------------------------
 // Define main window 
-extern double elementCr;
+extern double elementCr, sigma_m;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -29,16 +29,22 @@ private slots:
     void drawModelA();
     void computeModel();
     void computeOneR();
+    void potential();
+    void compute_nU();
 //    void setConductivity();
 //    void setCapacity();
     void clear();
     void init();
     void myMouseMoveEvent(QMouseEvent *);
     bool save();
+    bool open();
+    bool read();
     bool saveAs();
     void createStatusBar();
     void selectSigma(int);
     void computeRU();
+    void computeReffU();
+    void computeReffT();
     void computeAreaE();
     double AreaE(double E);
     void computeCapacityU();
@@ -50,8 +56,11 @@ private slots:
     void computeRT();
     void computeRT1();
     void stopCalc();
+    void computeEF_TU();
     void computeEFT();
     void computeEFU();
+    void computeRX();
+     void compute_deviation();
 
 protected:
     void resizeEvent( QResizeEvent * );
@@ -79,7 +88,11 @@ private:
     inline double Vbarrier(double r);
     inline double computeSum(int NE, double dE, double Vd, double EFTU);
     inline double Vdot(void);
-//    double AreaE(double E);
+    inline double effective_medium(double y);
+    inline double average(double y);
+
+    void randRcr();
+    //    double AreaE(double E);
 //    inline double AreaE(double E);
     QFont myfont;
     QGraphicsView *gv;
@@ -87,14 +100,14 @@ private:
     QButtonGroup *typeResistor;
     QString curFile;
 
-    MyParamD T, U, Tmin, Tmax, dT, Umin, Umax, dU, Ex, Ey, rand, EF,EFT;
+    MyParamD T, U, Tmin, Tmax, dT, Umin, Umax, dU, Ex, Ey, rand, EF,EFT,fraction,portion;
     MyParamI cols, rows, seed; 
-    MyParamD sigmaU, sigmaMin, r_c, capacity;
+    MyParamD sigmaU, sigmaMin, r_c, capacity,deviation,a_barrier,Cg0, Delta_r,G_ser,EF0;
     std::vector<double> EFTarray;
     std::vector<double> EFUarray;
     std::vector<double> AreaEf;
     int numOfCurve;
-    double gTun, gOv, Exc, Eyc, randc;//,Gold;
+    double gTun, gOv,randc,density;//, Exc, Eyc, randc;//,Gold;
     bool flgStop; 
     QDialog *winPlotU;
     QDialog *winPlotCU;
@@ -113,7 +126,7 @@ private:
     QLabel *dispFerr; // Display of ferr
     QLabel *dispBerr; // Display of berr
     QLabel *dispDeltaI; // Display of deltaI
-    QAction *exitAction, *saveAction, *chooseFontAction;
+    QAction *exitAction, *saveAction, *openAction, *chooseFontAction;
     QMenu *file;
     QComboBox *typeCond;
 };

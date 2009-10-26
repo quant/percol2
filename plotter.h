@@ -64,6 +64,7 @@ private:
     int curZoom,yScale,xScale;
     bool rubberBandIsShown;
     bool savePlot();
+    bool openPlot();
     bool savePlotAs();
     QRect rubberBandRect;
     QPixmap pixmap;

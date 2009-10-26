@@ -1,4 +1,4 @@
-#include <q3vbox.h>
+//#include <q3vbox.h>
 #include <qlabel.h>
 #include "myparam.h"
 #include <QtGui/QHBoxLayout>
