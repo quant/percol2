@@ -6,4 +6,7 @@ debug/*
 *.o
 moc_*
 *~
-
+*.dat
+*.dat[CV]
+[0123456789]
+*.tar.bz2

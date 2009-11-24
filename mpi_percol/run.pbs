@@ -1,0 +1,21 @@
+#!/bin/bash
+#PBS -V
+###PBS -r n
+##PBS -l nodes=2:ppn=1,cput=00:10:00,walltime=15:00
+##PBS -l nodes=2:ppn=1,cput=00:860:00,walltime=870:00
+#PBS -l nodes=16:ppn=1,cput=00:800:00,walltime=835:00
+##PBS -l nodes=4:ppn=1,cput=00:20:00,walltime=25:00
+#PBS -k oe
+###PBS -o ~/pbs
+###PBS -e ~/pbs
+#PBS -N Percolation
+#PBS -j oe
+date
+cd $PBS_O_WORKDIR
+pwd
+mpirun -r ssh -genv I_MPI_DEVICE rdma -n 16  ./mpi_percol
+#mpirun  -n 2  ./mpi_percol
+#mpirun -n 2  ./mpi_percol
+#/home/ifs/otkach/IMPI/cpiicc 
+date 
+   

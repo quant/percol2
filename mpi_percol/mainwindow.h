@@ -30,9 +30,6 @@ struct MainWindow
     bool save();
     bool saveAs();
     void selectSigma(int);
-    void computeRU();
-    void computeReffU();
-    void computeReffT();
     void computeAreaE();
     double AreaE(double E);
     void computeCapacityU();
@@ -42,6 +39,9 @@ struct MainWindow
     void computeRU1();
     void computeRrc();
     void computeRT(std::vector<X_of_T> & data);
+    void computeReffT(std::vector<X_of_T> & data);
+    void computeRU(std::vector<X_of_T> & data);
+    void computeReffU(std::vector<X_of_T> & data);
     void computeRT1();
     void computeEF_TU();
     void computeEFT();

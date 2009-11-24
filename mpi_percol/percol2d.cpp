@@ -508,7 +508,7 @@ void Percol2D::compute()
     }
 
     double deltai_max = 0;
-    double I1,I2;
+    double I1=0,I2=0;
     for (int i=0; i < ni; ++i) 
     {
         std::pair<int,int> ends = this->ends(i);
