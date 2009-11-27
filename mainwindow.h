@@ -26,7 +26,10 @@ private slots:
     void chooseFont();
     void drawModelR();
     void drawModelI();
-    void drawModelA();
+    void drawModeldV();
+    void drawModelV();
+    void drawModelJ();
+    void clearScene();
     void computeModel();
     void computeOneR();
     void potential();
@@ -75,9 +78,11 @@ private:
     void initPlotterCU(); 
     void initPlotterCT(); 
 
+    void randomizeSigma_0();
     void randomizeSigma_1();
     void randomizeSigma_2();
     void initMenuBar();
+    void initToolBar();
     void initStatusBar();
     void initControlDockWindow();
     void initGraphicsView();
@@ -102,7 +107,7 @@ private:
 
     MyParamD T, U, Tmin, Tmax, dT, Umin, Umax, dU, Ex, Ey, rand, EF,EFT,fraction,portion;
     MyParamI cols, rows, seed; 
-    MyParamD sigmaU, sigmaMin, r_c, capacity,deviation,a_barrier,Cg0, Delta_r,G_ser,EF0;
+    MyParamD sigmaU, sigmaMin, r_c, capacity,deviation,a_barrier,Cg0, Delta_r,G_ser,EF0,kappa;
     std::vector<double> EFTarray;
     std::vector<double> EFUarray;
     std::vector<double> AreaEf;

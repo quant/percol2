@@ -106,7 +106,6 @@ public:
 
 void MainWindow::initMenuBar()
 {
-//    QMenuBar* menu = menuBar();
     exitAction = new QAction("Exit", this);
     saveAction = new QAction("Save As", this);
     openAction = new QAction("Open file", this);
@@ -130,12 +129,28 @@ void MainWindow::initMenuBar()
     file->addSeparator();
     file->addAction(exitAction);  
 
-/*    menu->insertSeparator();
+//    menu->insertSeparator();
 
-    Q3PopupMenu* help = new Q3PopupMenu( menu );
+
+/*    Q3PopupMenu* help = new Q3PopupMenu( menu );
     help->insertItem("&About", this, SLOT(help()), Qt::Key_F1);
     menu->insertItem(tr("Помощь"),help);
     */
+}
+void MainWindow::initToolBar()
+{
+    QPixmap pix(15,15); 
+    pix.fill(Qt::red);
+
+    QAction *criticalElement = new QAction("Critical Element", this);
+    QToolBar *toolBar = new QToolBar(this);
+ //   QHBoxLayout *H = new QHBoxLayout;
+//    this->Ex.setDisplay(("E_x[meV]"), H);
+    toolBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    QToolButton *button1=new QToolButton();
+    button1->setIcon(pix);
+    toolBar->addAction(criticalElement);
+    addToolBar(toolBar);
 }
 
 void MainWindow::chooseFont()
@@ -301,9 +316,10 @@ void MainWindow::initControlDockWindow()
                 QGroupBox *gbRType = new QGroupBox(tr("Resistor Network Type"));
                 L->addWidget(gbRType);
 
-                QRadioButton *type1 = new QRadioButton(tr("Одинаковые сопротивления"));  
-                QRadioButton *type2 = new QRadioButton(tr("Случайные с exp разбросом"));  
-                QRadioButton *type3 = new QRadioButton(tr("Случ. одномерные сужения"));
+                QRadioButton *type1 = new QRadioButton(tr("RNW Exp(-kappa*x)"));  
+//                QRadioButton *type1 = new QRadioButton(tr("Одинаковые сопротивления"));  
+                QRadioButton *type2 = new QRadioButton(tr("RNW 0 or 1"));  
+                QRadioButton *type3 = new QRadioButton(tr("model RNW"));
                 
                 QVBoxLayout *vbox = new QVBoxLayout(gbRType);
                 vbox->addWidget(type1);
@@ -319,9 +335,9 @@ void MainWindow::initControlDockWindow()
                 this->typeResistor->button(2)->setChecked(true);
                 //connect(typeResistor,SIGNAL(clicked(int)),this,SLOT(selectSigma(int)));
 
-//    this->capacity.setDisplay(("C="), L);
-    this->sigmaMin.setDisplay(("sigmaMin"), L);
-    this->portion.setDisplay(("portion"), L);
+ //   this->sigmaMin.setDisplay(("sigmaMin"), L);
+    this->kappa.setDisplay(("kappa"), L);
+//    this->portion.setDisplay(("portion"), L);
  
             }
             QVBoxLayout *R = new QVBoxLayout(hlLR);
@@ -331,12 +347,18 @@ void MainWindow::initControlDockWindow()
     this->seed.setDisplay(("seed"), R);
     this->deviation.setDisplay(("deviation"), R);
 //    this->sigmaU.setDisplay(("sigmaU"), R);
-    this->r_c.setDisplay(("r_c"), R);
+//    this->r_c.setDisplay(("r_c"), R);
+ 
     this->fraction.setDisplay(("fraction x"), R);
 
+     QGroupBox *critElem = new QGroupBox(tr("Red Bond"));
+     QVBoxLayout *Hcr = new QVBoxLayout(R);
+     this->r_c.setDisplay(("r_c"), Hcr);
+     this->sigmaMin.setDisplay(("sigmaMin"), Hcr);
+     Hcr->addWidget(critElem);
             }
             
-   
+    
             /* now fill gb0/Canvas Image */
 //           QVBoxLayout *vl = new QVBoxLayout(hl3);
            QVBoxLayout *vl = new QVBoxLayout(gb3);
@@ -351,18 +373,28 @@ void MainWindow::initControlDockWindow()
                 QPushButton *drawCurButton = new QPushButton(tr("Draw Current I")); 
                 connect(drawCurButton,SIGNAL(clicked()), this, SLOT(drawModelI()));
 
-                QPushButton *drawHeatButton = new QPushButton(tr("Draw Heat I*V")); 
-                connect(drawHeatButton,SIGNAL(clicked()), this, SLOT(drawModelA()));
+                QPushButton *drawVButton = new QPushButton(tr("Draw Voltage V")); 
+                connect(drawVButton,SIGNAL(clicked()), this, SLOT(drawModelV()));
+ 
 
- //             QPushButton *computeDensityButton = new QPushButton(tr("density(U)")); 
- //             connect(computeDensityButton,SIGNAL(clicked()), this, SLOT(compute_nU()));
+                QPushButton *drawJButton = new QPushButton(tr("Draw Heat I*V")); 
+                connect(drawJButton,SIGNAL(clicked()), this, SLOT(drawModelJ()));
+
+                QPushButton *drawdVButton = new QPushButton(tr("Draw dV")); 
+                connect(drawdVButton,SIGNAL(clicked()), this, SLOT(drawModeldV()));
+
+                QPushButton *clearButton = new QPushButton(tr("Clear")); 
+                connect(clearButton,SIGNAL(clicked()), this, SLOT(clearScene()));
+
                 
  
                 vl->addWidget(computeButton);
                 vl->addWidget(drawResButton);
                 vl->addWidget(drawCurButton);             
-                vl->addWidget(drawHeatButton);
-//              vl->addWidget(computeDensityButton);
+                vl->addWidget(drawdVButton);             
+                vl->addWidget(drawVButton);
+                vl->addWidget(drawJButton);
+                vl->addWidget(clearButton);
                 vl->addStretch(1);
 
             }            
@@ -509,12 +541,14 @@ sigmaU(1000.0), flgStop(false),portion(0.01),
 T(0.13), Tmin(0.1),Tmax(5.301), dT(0.2), //Gold(0.0),
 U(165.), Umin(165.), Umax(235), dU(5.), 
 //U(950), Umin(200.), Umax(1500), dU(5.), 
-r_c(0.0), Ex(15.), Ey(4.), rand(0.5), EF(20),EFT(20.), a_barrier(150.), Cg0(-0.12),Delta_r(30.),G_ser(3.0),EF0(20.),
+r_c(0.0), Ex(15.), Ey(4.), rand(0.5), EF(20),EFT(20.),kappa(10.), 
+a_barrier(150.), Cg0(-0.12),Delta_r(30.),G_ser(3.0),EF0(20.),
 QMainWindow(parent,f),
 rows(30), cols(53), numOfCurve(1), seed(0), model(0)
 
 {
     this->initMenuBar(); 
+    this->initToolBar(); 
     this->initStatusBar();
     this->initPlotterT();
     this->initPlotterE();
@@ -781,7 +815,13 @@ public:
 };
 
 
-void MainWindow::drawModelA()
+void MainWindow::clearScene()
+{
+    QGraphicsScene *scene = gv->scene();
+    gv->fitInView(scene->sceneRect(),Qt::KeepAspectRatioByExpanding);
+    scene->clear();
+}
+void MainWindow::drawModelV()
 {
     QGraphicsScene *scene = gv->scene();
     gv->fitInView(scene->sceneRect(),Qt::KeepAspectRatioByExpanding);
@@ -852,7 +892,7 @@ void MainWindow::drawModelI()
 
     QGraphicsScene *scene = gv->scene();
     gv->fitInView(scene->sceneRect(),Qt::KeepAspectRatioByExpanding);
-    scene->clear();
+//    scene->clear();
 
     // Set view port
     const double factor = 0.95;
@@ -888,16 +928,17 @@ void MainWindow::drawModelI()
 
     //setMouseTracking( FALSE );
     randRcr();
-//    int i_Rcr = model->index_of_Rcr();
-//    elementCr = fabs((model->I[ i_Rcr ]));
+    int i_Rcr = model->index_of_Rcr();
+    elementCr = fabs((model->I[ i_Rcr ]));
     for (int e = 0; e < model->nI(); ++e)
     {
         QPair<int,int> ends = model->ends(e);
         QPair<double,double> xy0 = model->xy(ends.first);
         QPair<double,double> xy1 = model->xy(ends.second);
         q=fabs((model->I[e]));
+//        if(q>0.1*imax){
         QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
-        //n->show();
+//        }
     }
     //setMouseTracking( TRUE );
 
@@ -930,6 +971,128 @@ void MainWindow::drawModelI()
     scene->update();
     this->gv->update();
 }
+void MainWindow::drawModeldV()
+{
+
+    QGraphicsScene *scene = gv->scene();
+    gv->fitInView(scene->sceneRect(),Qt::KeepAspectRatioByExpanding);
+    scene->clear();
+
+    // Set view port
+    const double factor = 0.95;
+    double xscale = factor * scene->width()  / (model->xmax() - model->xmin());
+    double yscale = factor * scene->height() / (model->ymax() - model->ymin());
+    double scale = xscale < yscale ? xscale : yscale;
+    
+    QPair<double,double> offset;
+    offset.first = -0.5 * (model->xmax() - model->xmin()) * (1.0 - factor) / factor;
+    offset.second = -0.5 * (model->ymax() - model->ymin()) * (1.0 - factor) / factor;
+//-------
+    double Vmin = 1e300, Vmax = -1e300;
+    double q,V_1,V_2,V_i;
+    int nv=model->nV();
+    V_2=model->W[0];
+    int nI=model->nI();
+    Q3MemArray<double> Vij(nI);
+    for (int i = 0; i < model->nI(); ++i)
+    {
+ 	QPair<int,int> ends_i = model->ends(i);
+    if(ends_i.first < nv) V_1=model->V[ends_i.first];
+    else V_1=model->W[ends_i.first-nv];
+    if(ends_i.second < nv) V_2=model->V[ends_i.second];
+    else V_2=model->W[ends_i.second-nv];
+        V_i=fabs((V_1-V_2));
+//        V_i=log10(fabs(V_i));
+        Vij[i]=V_i;
+//	double IV_i = fabs(I_i * V_i);
+        double q = V_i;
+        if (q > Vmax) Vmax = q; 
+        if (q < Vmin) Vmin = q;
+    }
+//--------
+    csI.setRange(0, Vmax);
+//    csI.setRange(imin, imax);
+    csI.setColors(Qt::white,Qt::green);
+//    csI.setColors(Qt::white,Qt::black);
+//    csI.setExtraColor(Vmin+0.5*(Vmax-Vmin),QColor("#007f00"));
+    EdgeItemFactory ifactory(scene,&csI,scale,offset);
+    randRcr();
+    for (int e = 0; e < model->nI(); ++e)
+    {
+        QPair<int,int> ends = model->ends(e);
+        QPair<double,double> xy0 = model->xy(ends.first);
+        QPair<double,double> xy1 = model->xy(ends.second);
+        q=Vij[e];
+//        if(q>0.1*Vmax){
+        QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
+//        }
+    }
+
+    scene->update();
+    this->gv->update();
+}
+
+void MainWindow::drawModelJ()
+{
+
+    QGraphicsScene *scene = gv->scene();
+    gv->fitInView(scene->sceneRect(),Qt::KeepAspectRatioByExpanding);
+//    scene->clear();
+
+    // Set view port
+    const double factor = 0.95;
+    double xscale = factor * scene->width()  / (model->xmax() - model->xmin());
+    double yscale = factor * scene->height() / (model->ymax() - model->ymin());
+    double scale = xscale < yscale ? xscale : yscale;
+    
+    QPair<double,double> offset;
+    offset.first = -0.5 * (model->xmax() - model->xmin()) * (1.0 - factor) / factor;
+    offset.second = -0.5 * (model->ymax() - model->ymin()) * (1.0 - factor) / factor;
+//-------
+    double Vmin = 1e300, Vmax = -1e300;
+    double q,V_1,V_2,V_i;
+    int nv=model->nV();
+    V_2=model->W[0];
+    int nI=model->nI();
+    Q3MemArray<double> Jij(nI);
+    for (int i = 0; i < model->nI(); ++i)
+    {
+ 	QPair<int,int> ends_i = model->ends(i);
+    if(ends_i.first < nv) V_1=model->V[ends_i.first];
+    else V_1=model->W[ends_i.first-nv];
+    if(ends_i.second < nv) V_2=model->V[ends_i.second];
+    else V_2=model->W[ends_i.second-nv];
+        V_i=fabs(model->I[i]*(V_1-V_2));
+//        V_i=log10(fabs(V_i));
+        Jij[i]=V_i;
+//	double IV_i = fabs(I_i * V_i);
+        double q = V_i;
+        if (q > Vmax) Vmax = q; 
+        if (q < Vmin) Vmin = q;
+    }
+//--------
+    csI.setRange(0, Vmax);
+//    csI.setRange(imin, imax);
+    csI.setColors(Qt::white,Qt::green);
+//    csI.setColors(Qt::white,Qt::black);
+//    csI.setExtraColor(Vmin+0.5*(Vmax-Vmin),QColor("#007f00"));
+    EdgeItemFactory ifactory(scene,&csI,scale,offset);
+    randRcr();
+    for (int e = 0; e < model->nI(); ++e)
+    {
+        QPair<int,int> ends = model->ends(e);
+        QPair<double,double> xy0 = model->xy(ends.first);
+        QPair<double,double> xy1 = model->xy(ends.second);
+        q=Jij[e];
+//        if(q>0.1*Vmax){
+        QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
+//        }
+    }
+
+    scene->update();
+    this->gv->update();
+}
+
 void MainWindow::drawModelR()
 {
     int r_type = this->typeResistor->checkedId();
@@ -1491,9 +1654,9 @@ void MainWindow::computeReffU()
         this->selectSigma(r_type);
         double y=effective_medium(y_old);
         y_old=y;
-        y=6.28*y;
+        double y1=6.28*y;
         data.push_back(x);
-        data.push_back(y);
+        data.push_back(y1);
         this->plotterU->setCurveData(this->numOfCurve,data);
 
         /*       if(y<2e-10) {
@@ -1687,15 +1850,15 @@ void MainWindow::compute_pSigma()
     winPlotU->raise();
     winPlotU->setActiveWindow();
     std::vector<double> data;
-    int G_type = this->typeCond->currentIndex();
+/*    int G_type = this->typeCond->currentIndex();
         if(G_type!=4) 
     {
         computeEF_TU();
     }
-//    int r_type = this->typeResistor->checkedId();
+//    int r_type = this->typeResist!!!or->checkedId();
 //    this->selectSigma(r_type);
 //    model->compute();
-    computeModel();
+    computeModel(); */
     double Vmin = 1e300, Vmax = -1e300;
     double q,V_1,V_2,V_i;
     int nv=model->nV();
@@ -1704,6 +1867,8 @@ void MainWindow::compute_pSigma()
     Q3MemArray<double> Vij(nI);
     for (int i = 0; i < model->nI(); ++i)
     {
+        if(fabs(model->Sigma[i])!=this->sigmaU)
+        {
 	QPair<int,int> ends_i = model->ends(i);
     if(ends_i.first < nv) V_1=model->V[ends_i.first];
     else V_1=model->W[ends_i.first-nv];
@@ -1719,25 +1884,32 @@ void MainWindow::compute_pSigma()
  */       
         V_i=fabs((V_1-V_2));
 //        V_i=fabs(model->I[i]*(V_1-V_2));
-        if(V_i<1e-50) V_i=1e-50;
-        V_i=log10(fabs(V_i));
+//        if(V_i<1e-20) V_i=1e-20;
+        if(V_i<0.1) V_i=0.1;
+        V_i=fabs(V_i);
+//        V_i=log10(fabs(V_i));
         Vij[i]=V_i;
 //	double IV_i = fabs(I_i * V_i);
         double q = V_i;
         if (q > Vmax) Vmax = q; 
         if (q < Vmin) Vmin = q;
-
+        }
     }
-    int nS=1001;
+    int nS=21;//1001;
     Q3MemArray<double> pS( nS );
+//    Q3MemArray<int> line( nS );
     pS.fill(0.0);
-//    Vmin=-20;
+//    Vmin=-20.;
     double dS=(Vmax-Vmin)/(nS-1);
     int e;
-        for (int i = 0; i < nI; ++i)
+    int isum=0;   
+    for (int i = 0; i < nI; ++i)
         {   
-            
+        if(fabs(model->Sigma[i])!=this->sigmaU)
+        {
+           
             q = Vij[i];
+
                 e=int((q-Vmin)/dS);
         if (e < 0 || e > nS-1)
         {
@@ -1747,15 +1919,19 @@ void MainWindow::compute_pSigma()
                 QMessageBox::Ok,QMessageBox::Ok);
             break;
         }
-                pS[e]=pS[e]+1; 
+                pS[e]=pS[e]+1;
+
+//                line[e]+=1;
+                isum=isum+1;
+        }
         }
         double sum=0.;
-        int isum=model->nI();
+//        int isum=model->nI();
         for (int i = 0; i < nS; ++i)
         {   
             double x=Vmin+i*dS+0.5*dS;
             data.push_back(x);
-            double p=pS[i]/isum;
+            double p=pS[i];//isum;
             sum=sum+p;
             data.push_back(p);
 //            data.push_back(sum);
@@ -1915,7 +2091,7 @@ double MainWindow::AreaE(double E)
             y2=500-y;
             r1=sqrt(x1*x1+y2*y2)-350;
             r2=sqrt(x2*x2+y2*y2)-350;    
-            r3=sqrt(x1*x1+y1*y1)-350;    
+            r3=sqrt(x1*x1+y1*y1)-350;   
             r4=sqrt(x2*x2+y1*y1)-350;
             if(r1>0&&r2>0&&r3>0&&r4>0) 
             {
@@ -2359,10 +2535,10 @@ void MainWindow::computeEFT()
 //    aa=0;
     double EF00=this->EF0;
     this->EF=aa+EF00+Vd-Vd0+this->Cg0*(this->U-Vg0);
-    int NE=(this->EF+40*this->Tmax-Vdot())/dE;
+    int NE=(int)( (this->EF+40*this->Tmax-Vdot())/dE );
     this->AreaEf.resize(NE,0.0);
     double sum, sum1, Area, sum10, sum11, sum12,x;
-    int NT=1 +(this->Tmax-this->Tmin)/this->dT;
+    int NT=1 +int((this->Tmax-this->Tmin)/this->dT);
     this->EFTarray.resize(NT,0.0);
     sum=0;
     for (int i=0; i< NE; ++i)
@@ -2640,9 +2816,9 @@ void MainWindow::computeReffT()
         this->selectSigma(r_type);
         double y=effective_medium(y_old);
         y_old=y;
-        y=6.28*y;
+        double y1=6.28*y;
         data.push_back(x);
-        data.push_back(y);
+        data.push_back(y1);
         this->plotterT->setCurveData(this->numOfCurve,data);
     }
     this->numOfCurve++;
@@ -3093,14 +3269,57 @@ void MainWindow::randomizeSigma_1()
         }     
     
 }
+void MainWindow::randomizeSigma_0()
+{   double x1,x2,x3;
+    VSLStreamStatePtr stream;
+//    vslNewStream( &stream, VSL_BRNG_MCG31, 0);
+/*    int iseed=this->seed;
+    vslNewStream( &stream, VSL_BRNG_MCG31, iseed++ );
+    this->seed=iseed;
+*/
+    vslNewStream( &stream, VSL_BRNG_MCG31, this->seed );
+    vdRngUniform( 0, stream, model->nI(), model->Sigma.data(), 0.0, 1.0 );
+    vslDeleteStream( &stream );
+    for (int i=0; i < model->nI(); ++i)
+    {
+        QPair<int,int> ends = model->ends(i);
+        int from = ends.first;
+        int to   = ends.second;
+        QPair<double,double> xy0 = model->xy(from);
+        QPair<double,double> xy1 = model->xy(to);
+ 
+        if (xy0.first==0 && xy1.first==0
+            || xy0.first==0 && xy1.first==1
+            || xy0.first==1 && xy1.first==0
+            || xy0.first==1 && xy1.first==1
+            || xy0.first==model->xmax() && xy1.first==model->xmax() 
+            || xy0.first==model->xmax()-1 && xy1.first==model->xmax()
+            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1  
+            || xy0.first==model->xmax()-1 && xy1.first==model->xmax()-1
+            )
+        {
+            model->Sigma[i]=this->sigmaU;
+        }
+        else  {x1=model->Sigma[i];
+            if (x1 < this->r_c) model->Sigma[i] = CUTOFF_SIGMA;
+            else model->Sigma[i] = exp(-kappa*(1-x1));
+            if (model->Sigma[i]<CUTOFF_SIGMA) model->Sigma[i] = CUTOFF_SIGMA;
+        }
+ 
+        }     
+    
+}
 
 void MainWindow::selectSigma(int i)
 {
     this->setModel();
     switch(i)
     {
-    case 0: /* uniform Sigma */
-        {
+    case 0: 
+        this->randomizeSigma_0();
+        break;
+        /* uniform Sigma */
+/*        {
 //            double x3=this->Exc; 
 //            double x2=this->Eyc;
             double x1=this->randc;
@@ -3137,6 +3356,7 @@ void MainWindow::selectSigma(int i)
      }
         }
         break;
+*/
     case 1: /* random Sigma */
         this->randomizeSigma_1();
         break;

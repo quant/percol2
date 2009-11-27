@@ -11,6 +11,7 @@
 #include <QKeyEvent>
 #include <QPaintEvent>
 #include <vector>
+#include <map>
 
 class QToolButton;
 class PlotSettings;
@@ -27,6 +28,7 @@ public:
     void setPlotSettings(const PlotSettings &settings);
     void setCurveData(int id, const CurveData &data);
     void clearCurve(int id);
+    int firstUnusedId() const;
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
 public slots:

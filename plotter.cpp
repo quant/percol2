@@ -3,7 +3,7 @@
 //#include <qtoolbutton.h>
 //Added by qt3to4:
 //#include <Q3TextStream>
-//#include <Q3PointArray>
+#include <QByteArray>
 #include "plotter.h"
 #include <cmath>
 #include <map>
@@ -180,6 +180,14 @@ void Plotter::clearCurve(int id)
     curveMap.erase(id);
 //    this->captureBoundsToSettings();
     refreshPixmap();
+}
+int Plotter::firstUnusedId() const
+{
+    for (int id = 0; ; ++id)
+    {
+        if (this->curveMap.find(id) == this->curveMap.end())
+            return id;
+    }
 }
 QSize Plotter::minimumSizeHint() const
 {
@@ -500,34 +508,39 @@ bool Plotter::savePlotAs()
 bool Plotter::openPlot()
  {
      QString fileName = QFileDialog::getOpenFileName(this);
-     if (!fileName.isEmpty()) {
-         // read from file
-         QFile file(fileName);
+     if (fileName.isEmpty()) return false;
 
-         if (!file.open(QIODevice::ReadOnly)) {
-              QMessageBox::information(this, tr("Unable to open file"),
-                 file.errorString());
-             return false;
+     // read from file
+     QFile file(fileName);
+
+     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+     {
+         QString msg;
+         msg.sprintf(tr("cannot open file %s: %s"),fileName.ascii(), file.errorString().ascii());
+         QMessageBox::information(this, tr("Ooops!") ,msg);
+         return false;
+     }
+
+     CurveData curve;
+     while (!file.atEnd())
+     {
+         double x,y;
+         QByteArray line = file.readLine();
+         if (2 == sscanf(line.data(),"%lg %lg",&x,&y))
+         {
+             curve.push_back(x);
+             curve.push_back(y);
          }
-
-//         QTextStream out(&file);
-//         QString output = out.readAll();
-char buf[1024];
-std::vector<pair<double,double> > xy;
-double x,y;
-//file >> buf;
-//for (; !feof(file); ) {
-// file >> buf;
-//int n = sscanf(buf,"%lg %lg", &x, &y);
-//if (n == 2) xy.push_back(pair(x,y))
-//else break;
-//     }
-//setCurveData(this->numOfCurve,xy);
-         // display contents
+         else if (curve.size() > 0)
+         {
+             this->setCurveData(this->firstUnusedId(),curve);
+             curve.erase(curve.begin(),curve.end());
+         }
+     }
      file.close();
-    return TRUE;
-     }
-     }
+     return TRUE;
+}
+
 bool Plotter::savePlot()
 {
     if (this->curFileCurve.isEmpty())    {
