@@ -1,6 +1,6 @@
-QMAKE_CC = mpicc
-QMAKE_CXX = mpicxx
-QMAKE_LINK = mpicxx
+QMAKE_CC = mpicc -cc=icc
+QMAKE_CXX = mpicxx -cxx=icpc
+QMAKE_LINK = mpicxx -cxx=icpc
 
 INCLUDEPATH += "$$(MKLROOT)/include"
 win32 {
@@ -15,10 +15,12 @@ win32 {
 }
 unix {
 LIBS += -lmkl_intel_lp64
-LIBS += -lmkl_intel_thread
+#LIBS += -lmkl_intel_thread
+LIBS += -lmkl_sequential
 LIBS += -lmkl_core
 LIBS += -liomp5
 LIBS += -lpthread
+QMAKE_CXXFLAGS = -xSSSE3 -wd981,1572,383,193,593
 }
 
 # Local variables:
