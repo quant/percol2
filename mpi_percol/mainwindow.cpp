@@ -5,14 +5,14 @@
 
 const double CUTOFF_SIGMA = 1e-15;
 const int NCUT = 10000;
-const double Delta_r=35;//15; //nm
+const double Delta_r=30.;//15; //nm
 const double E0=560.;//meV
 const double Vg0=50;
-const double Cg0=-0.06;//-0.05;//-0.04;
+const double Cg0=-0.12;//-0.05;//-0.04;
 const double EF0=20;
 double elementCr = 1e+22;
 double sigma_m=0.1;
-
+const double G_ser=3.;
 void MainWindow::clear(void)
 {
 }
@@ -25,9 +25,9 @@ void MainWindow::setModel()
 
 MainWindow::MainWindow()
 : randc(0.5), typeCond(3),sigmaU(1000.0), 
-T(0.13), Tmin(0.1),Tmax(5.301), dT(0.2), 
-U(180), Umin(150.), Umax(300), dU(5.), 
-r_c(0.0), Ex(13.), Ey(3.), rand(0.5), EF(20),EFT(20.),
+T(0.13), Tmin(0.1),Tmax(5.301), dT(0.1), 
+U(190), Umin(150.), Umax(300), dU(5.), 
+r_c(0.0), Ex(15.), Ey(4.), rand(0.5), EF(20),EFT(20.),
 rows(30), cols(53), seed(0), model(0)
 
 {
@@ -49,44 +49,125 @@ void MainWindow::computeRT(std::vector<X_of_T> & data)
     if (G_type != 4) 
     {
         computeEFT();
-        double EFTU=this->EFTarray[0];
-        if(EFTU==0) return;
     }
-    int j=0;
-    for (double x = this->Tmax; x >= this->Tmin; x -= dT)
-    {   this->T=x;
+    int NT=1 +int((this->Tmax-this->Tmin)/this->dT);
+    for(int j=0; j<NT; j++)
+    {           
+        double x=this->Tmax-this->dT*j;
+        this->T=x;
         if(G_type==4) this->EFT=EF0;
         else
         {
-        double EFTU=this->EFTarray[j];
-        this->EFT=EFTU;
-        j++;
+                double EFTU=this->EFTarray[j];
+                this->EFT=EFTU;
         }
         this->computeModel();
         double y=model->conductivity;
+        y=(this->cols-3)*y/this->rows;
         y=6.28*y;
-
+        printf("T=%lg G=%lg\n",x,y);
         X_of_T  xy;
         xy.T = x;
         xy.G = y;
         data.push_back(xy);
     }
 }
+//!!!!!!
+void MainWindow::computeEF_TU()
+{   
+    double E,EFT0,EFT1,EFT2 ;
+    double dE=0.1;
+    double sum, sum1, Area, sum10, sum11, sum12;
+    double Ucur=this->U;//!!!!!!!!!!!
+    this->U=Vg0;
+    double Vd0=Vdot();
+    this->U=Ucur;
+    double aa=(sqrt(1250.)-350)/Delta_r;
+    aa=aa*aa;
+    aa=4*this->U/(1+aa);
+//    aa=0;
+    if(this->T==0) 
+    {   
+        EFT1=aa+EF0+Vdot()-Vd0+Cg0*(Ucur-Vg0);//!!!!!!!!!!
+    }
+    else
+    {    
+        //T!=0
+    double Vd=Vdot();
+    this->EF=aa+EF0+Vd-Vd0+Cg0*(Ucur-Vg0); 
+    int NE=int((this->EF+40*this->T-Vd)/dE);
+    this->AreaEf.resize(NE,0.0);
+    sum=0;
+    EFT1=this->EF-1;//!!!!!!!!!!!!!!!!!!!!!!!!
+    for (int i=0; i< NE; ++i)
+    {
+        E=dE*(i+1)+Vd;
+        Area=AreaE(E)/10000;
+        this->AreaEf[i]=Area;
+        if(E<=this->EF) sum=sum+Area;
+    }  
+//        this->density=sum;
+    if(sum!=0) 
+    {
+        EFT0=EFT1;//this->EF-1.;//!!!!!!!!!!!!!!!!!
+        sum1=computeSum(NE, dE, Vd, EFT0);
+    while(sum1>sum)
+    {
+    EFT0=EFT0-1;
+    sum1=computeSum(NE, dE, Vd, EFT0);
+    }
+        sum10=sum1;
+        EFT1=EFT0+1;
+        sum11=computeSum(NE, dE, Vd, EFT1);
+//        int j=0;
+        while(fabs(sum11-sum)>0.001*sum)
+        {
+            EFT2=EFT1-(sum11-sum)*(EFT1-EFT0)/(sum11-sum10);
+            sum12=computeSum(NE, dE, Vd, EFT2);
+//            j++;
+            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum) 
+            {
+                sum10=sum11;
+                EFT0=EFT1;
+            }
+                sum11=sum12;
+                EFT1=EFT2;
+        }
+    }
+    }
+        this->EFT=EFT1;
+    }
+
+//!!!!!!!
 void MainWindow::computeEFT()
 {   
     double E,EFT0,EFT1,EFT2 ;
+    int NT=1+int( (this->Tmax-this->Tmin)/this->dT );
+    this->EFTarray.resize(NT,0.0);
+//    printf("EFTarray has %i points",NT);
+/*    for(int j=0; j<NT; j++)
+    {
+        this->EFTarray[j]=EF0;
+    }
+*/
     double dE=0.1;
     double Ucur=this->U;
     this->U=Vg0;
     double Vd0=Vdot();
     this->U=Ucur;
     double Vd=Vdot();
-    this->EF=EF0+Vd-Vd0+Cg0*(this->U-Vg0);
-    int NE = (int)( (this->EF+40*this->Tmax-Vdot())/dE );
+    double aa1=(sqrt(1250.)-350)/Delta_r;
+    aa1=aa1*aa1;
+    aa1=4/(1+aa1);
+    double aa=aa1*this->U;
+//    double EF00=this->EF0;
+    this->EF=aa+EF0+Vd-Vd0+Cg0*(this->U-Vg0);
+//    return;
+    int NE = 1+int( (this->EF+40*this->Tmax-Vdot())/dE );
+    if(NE<0) return;
+    printf("AreaEf has %i points",NE);
     this->AreaEf.resize(NE,0.0);
     double sum, sum1, Area, sum10, sum11, sum12;
-    int NT=1+int( (this->Tmax-this->Tmin)/this->dT );
-    this->EFTarray.resize(NT,0.0);
     sum=0;
     for (int i=0; i< NE; ++i)
     {
@@ -98,11 +179,10 @@ void MainWindow::computeEFT()
     if(sum==0) return;
     else
     {
-    int j=0;
     EFT1=this->EF-1.;
-    for(double kT=this->Tmax; kT>=this->Tmin; kT-=this->dT)
+    for(int j=0; j<NT; j++)
     {
-        this->T=kT;
+        this->T=this->Tmax-this->dT*j;
         EFT0=EFT1;
         sum1=computeSum(NE, dE, Vd, EFT0);
     while(sum1>sum)
@@ -126,7 +206,6 @@ void MainWindow::computeEFT()
                 EFT1=EFT2;
         }
         this->EFTarray[j]=EFT1;
-        j++;
     }
     }
 }
@@ -142,78 +221,97 @@ double MainWindow::computeSum(int NE, double dE, double Vd, double EFT)
 return sum;
 }
 
-void MainWindow::computeReffT()
+void MainWindow::computeReffT(std::vector<X_of_T> & data)
 {
-    std::vector<double> data;
+//    std::vector<double> data;
     int r_type = this->typeResistor;
-    int G_type = this->typeCond;
+    int G_type = typeCond;
     if(G_type!=4) 
     {
         computeEFT();
-        double EFTU=this->EFTarray[0];
-        if(EFTU==0) return;
+//        double EFTU=this->EFTarray[0];
+//        if(EFTU==0) return;
     }
     int j=0;
     double y_old=0;
-    for (double x = this->Tmax; x >= this->Tmin; x -= dT)
+//     double EF00=this->EF0;
+  for (double x = this->Tmax; x >= this->Tmin; x -= dT)
     {   this->T=x;
         if(G_type==4) this->EFT=EF0;
         else
         {
-        double EFTU=this->EFTarray[j];
-        this->EFT=EFTU;
-        j++;
+           if(j<this->EFTarray.size()) 
+            {
+                double EFTU=this->EFTarray[j];
+                this->EFT=EFTU;
+                j++;
+            }
+            else 
+            {
+            break;
+        }
         }
         this->selectSigma(r_type);
         double y=effective_medium(y_old);
         y_old=y;
-        y=(this->rows)*y/(this->cols-3);
-        y=6.28*y;
-        data.push_back(x);
-        data.push_back(y);
+//        y=(this->rows)*y/(this->cols-3);
+        double y1=6.28*y;
+        X_of_T  xy;
+        xy.T = x;
+        xy.G = y1;
+        data.push_back(xy);
     }
 }
-void MainWindow::computeRU()
+void MainWindow::computeRU(std::vector<X_of_T> & data)
 {
-    std::vector<double> data;
-    std::vector<double> data1;
-    int G_type = this->typeCond;
+//    std::vector<double> data;
+//    std::vector<double> data1;
+    int G_type = typeCond;
         if(G_type!=4) 
     {
         computeEFU();
-        double EFTU=this->EFUarray[0];
-        if(EFTU==0) return;
+//        double EFTU=this->EFUarray[0];
+//        if(EFTU==0) return;
     }
     int j=0;
+//    double EF00=this->EF0;
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
-    {   
+  {   
     this->U =x;
         if(G_type==4) this->EFT=EF0;
         else
         {
-        double EFTU=this->EFUarray[j];
-        this->EFT=EFTU;
-        j++;
-        if(EFTU==0) break;
+            if(j<this->EFUarray.size()) 
+            {
+                double EFTU=this->EFUarray[j];
+                this->EFT=EFTU;
+                if(EFTU<=0) break; 
+                j++;
+            }
+            else 
+            {
+            break;
+        }
         }
     this->computeModel();
     double y=model->conductivity;
-        y=6.28*y;
-        data.push_back(x);
-        data.push_back(y);
+        y=(this->cols-3)*y/(this->rows);
+        double y1=6.28*y;
+        X_of_T  xy;
+        xy.T = x;
+        xy.G = y1;
+        data.push_back(xy);
     }
 }
-void MainWindow::computeReffU()
+void MainWindow::computeReffU(std::vector<X_of_T> & data)
 {
-    std::vector<double> data;
-    std::vector<double> data1;
-    int r_type = this->typeResistor;
-        int G_type = this->typeCond;
+        int r_type = this->typeResistor;
+        int G_type = typeCond;
         if(G_type!=4) 
     {
         computeEFU();
-        double EFTU=this->EFUarray[0];
-        if(EFTU==0) return;
+//        double EFTU=this->EFUarray[0];
+ //       if(EFTU==0) return;
     }
     int j=0;
     double y_old=0;
@@ -223,18 +321,26 @@ void MainWindow::computeReffU()
         if(G_type==4) this->EFT=EF0;
         else
         {
-        double EFTU=this->EFUarray[j];
-        this->EFT=EFTU;
-        j++;
-        if(EFTU==0) break;
+                if(j<this->EFUarray.size()) 
+            {
+                double EFTU=this->EFUarray[j];
+                this->EFT=EFTU;
+                j++;
+            }
+            else 
+            { 
+            break;
+        }
+//        if(EFTU==0) break;
         }
         this->selectSigma(r_type);
         double y=effective_medium(y_old);
         y_old=y;
-        y=(this->rows)*y/(this->cols-3);
-        y=6.28*y;
-        data.push_back(x);
-        data.push_back(y);
+        double y1=6.28*y;
+        X_of_T  xy;
+        xy.T = x;
+        xy.G = y1;
+        data.push_back(xy);
     }
 }
 
@@ -321,7 +427,7 @@ double MainWindow::effective_medium(double y_old)
     double y2=0;
     double y11=y0;
     int j=0;
-        while(fabs(y1-y11)>0.01*y1)
+        while(fabs(y1-y11)>0.0001*y1)
         {
             y2=y1-sum11*(y1-y0)/(sum11-sum10);
             double sum12=average(y2)/Totsum;
@@ -378,17 +484,26 @@ void MainWindow::computeEFU()
     double sum, sum1, Area, sum10, sum11, sum12;
     int NU=1+int( (this->Umax-this->Umin)/this->dU );
     this->EFUarray.resize(NU,0.0);
-//    double Ucur=this->U;
+ //   double Ucur=this->U;
     this->U=Vg0;
     double Vd0=Vdot();
+    double aa1=(sqrt(1250.)-350)/Delta_r;
+    aa1=aa1*aa1;
+    aa1=4/(1+aa1);
+//    double EF00this->EF0;
     if(this->T==0) {
     int j=0;  
     for(double x=this->Umin; x<=this->Umax; x+=this->dU)
     {   this->U=x; 
-        EFT1=EF0+Vdot()-Vd0+Cg0*(this->U-Vg0);
-        this->EFUarray[j]=EFT1;
-        j++;
-        this->EFT=EFT1;
+        double aa=aa1*this->U; 
+//        aa=0;
+        EFT1=aa+EF0+Vdot()-Vd0+Cg0*(this->U-Vg0);
+        if(j<this->EFUarray.size())  
+            {   
+                this->EFUarray[j]=EFT1;
+                j++;
+                this->EFT=EFT1;
+            }
     }
     return;
     }
@@ -397,7 +512,8 @@ void MainWindow::computeEFU()
     {
         this->U=x;
         double Vd=Vdot();
-        this->EF=EF0+Vd-Vd0+Cg0*(this->U-Vg0); 
+        double aa=aa1*this->U;
+        this->EF=aa+EF0+Vd-Vd0+Cg0*(this->U-Vg0); 
     int NE = int( (this->EF+40*this->T-Vd)/dE );
     this->AreaEf.resize(NE,0.0);
     sum=0;
@@ -437,9 +553,13 @@ void MainWindow::computeEFU()
                 sum11=sum12;
                 EFT1=EFT2;
         }
-        this->EFUarray[j]=EFT1;
-        j++;
-        this->EFT=EFT1;
+            if(j<this->EFUarray.size())  
+            {   
+                this->EFUarray[j]=EFT1;
+                j++;
+                this->EFT=EFT1;
+            }
+            else break; 
     }
     }
 }
@@ -447,9 +567,9 @@ void MainWindow::computeEFU()
 double MainWindow::sedlo(double E, double Ey, double Ex, double V)
 { double  alpha,G0,g,exp0,EE, Ep,Uc;
   Uc=Vdot();
-  double a1=100;//80;//100;//500;//nm
+  double a1=150;//80;//100;//500;//nm
   double Va=V-12.50;//meV
-  V=V+2*exp(-this->T/0.3);
+  V=V+2*exp(-this->T/0.6);
   double a0=2/Ex*sqrt(E0*(V-Va));
   double a2=a0/a1;
   double U00=V-Va;
@@ -500,7 +620,11 @@ double MainWindow::Vbarrier(double r)
   rr=0.5*(RMIN+r*(RMAX-RMIN))/Delta_r;
   rr=rr*rr;
   BB=(1+rr);
-  return 2*this->U/BB;
+  BB=2./BB;
+  double aa1=(sqrt(1250.)-350)/Delta_r;
+  aa1=aa1*aa1;
+  aa1=4/(1+aa1);
+  return (aa1+BB)*this->U;
 }
 double MainWindow::Vdot(void)
 {double x1,y1,r1;
@@ -538,7 +662,6 @@ double MainWindow::singleSigma(double r)
     double aa=0.25*dE/kT;
     if(Emin<Uc) Emin=Uc+dE;
         for(E=Emin; E<=Ec+40*kT; E+=dE){
-//        for(E=Emin; E<=Ec+20*kT; E+=dE){
             alpha=0.5*(E-Ec)/kT;
             csh=1./cosh(alpha);
             sum=aa*csh*csh;
@@ -551,9 +674,11 @@ double MainWindow::singleSigma(double r)
         }
         if(G_type==1) Gtot=GTunnel;
         if(G_type==2) Gtot=GOver;
-        double eps=0.0037*this->U-0.48;
+        double eps=0.0075*this->U-1.02;
         if(G_type==3) Gtot=GOver+GTunnel*exp(-eps/kT);
     }
+    Gtot=Gtot*G_ser/(Gtot+G_ser);
+
   if(Gtot<CUTOFF_SIGMA) return CUTOFF_SIGMA;
   else 
       return Gtot;

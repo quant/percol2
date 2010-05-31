@@ -22,3 +22,5 @@ moc_*
 *.docx
 [0123456789]
 Makefile
+*.dat[CV]
+*.tar.bz2

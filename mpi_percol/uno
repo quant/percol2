@@ -1,0 +1,19 @@
+#!/usr/bin/perl
+
+my @data;
+
+while(<>)
+{
+    if (/T=(\S*) G=(\S*) EF=(\S*)/)
+    {
+        #print "$1 $2 $3\n";
+	push @data, [$1, $2, $3];
+    }
+}
+
+@data = sort { $a->[0] <=> $b->[0] } @data;
+
+for my $d (@data)
+{
+    print "$d->[0] $d->[1] $d->[2]\n"
+}
