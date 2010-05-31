@@ -24,3 +24,7 @@ moc_*
 Makefile
 *.dat[CV]
 *.tar.bz2
+*.doc
+*.idb
+*.sln
+*.ogg
