@@ -18,10 +18,14 @@ public:
     Q3MemArray<double> I; // nI currents (computed)
     Q3MemArray<double> V; // nV defined voltages
     Q3MemArray<double> W; // nW computed voltages
+    Q3MemArray<double> difV; // nI voltage difference (computed)
+    Q3MemArray<double> IdifV; // nI voltage difference (computed)
 
     int nV() const { return V.size(); } // number of defined voltage nodes
     int nW() const { return W.size(); } // number of unknown voltage nodes
     int nI() const { return I.size(); } // number of links
+    int ndifV() const { return difV.size(); } // number of links
+    int nIdifV() const { return IdifV.size(); } // number of links
     // Defined nodes have numbers 0...nV()-1
     // Unknown nodes have numbers nV()...nV()+nW()-1
 
@@ -46,6 +50,13 @@ public:
 
     // Reciprocal condition number of the last computation
     double rcond, ferr, berr, deltaI, conductivity,capacity;
+
+    QVector<int> index_for_sorted_W() const;
+    QVector<int> index_for_sorted_difV() const;
+    QVector<int> index_for_sorted_IdifV() const;
+    QVector<int> index_for_sorted_I() const;
+    QVector<int> index_for_sorted_Sigma() const;
+
 };
 
 // Define a rectangular percolation grid with source drain at opposite 
@@ -62,10 +73,14 @@ public:
     virtual Q3MemArray<int> from(int v) const;
     virtual Q3MemArray<int> to(int v) const;
     virtual QPair<double,double> xy(int v) const;
+    virtual int vnode(double x,double y) const;
     virtual double xmax() const;
     virtual double xmin() const;
     virtual double ymax() const;
     virtual double ymin() const;
+
+//private:
+//    bool W_lessthen(int a, int b) const { return W[a] < W[b]; }
 };
 
 #endif /* PERCOL2D_H_INCLUDED */

@@ -21,7 +21,7 @@ public:
 
 public slots:
     void help();
-
+    QVector<int> index_for_sorted_Anything() const;
 private slots:
     void chooseFont();
     void drawModelR();
@@ -52,7 +52,14 @@ private slots:
     double AreaE(double E);
     void computeCapacityU();
     void computeCapacityT();
+    void compute_deltaVx();
+    void compute_Vx();
+    void compute_pV();
+    void compute_pdV();
+    void compute_p_small_V();
+    void compute_p_small_dV();
     void compute_pSigma();
+    void compute_pCurrent();
     void compute_SumpSigma();
     void computeRU1();
     void computeRrc();
@@ -62,6 +69,7 @@ private slots:
     void computeEF_TU();
     void computeEFT();
     void computeEFU();
+    void computeVimax();
     void computeRX();
      void compute_deviation();
 
@@ -74,10 +82,14 @@ private:
     void slotWindowsActivated(int);
     void initPlotterT(); 
     void initPlotterE(); 
-    void initPlotterU(); 
+    void initPlotterU();
+    void initPlotCurrent();
+    void initPlotVoltage();
+    void initPlotJouleHeat();
+    void initPlotConductance();
     void initPlotterCU(); 
     void initPlotterCT(); 
-
+    void mysort(std::vector<double> &v);
     void randomizeSigma_0();
     void randomizeSigma_1();
     void randomizeSigma_2();
@@ -86,7 +98,7 @@ private:
     void initStatusBar();
     void initControlDockWindow();
     void initGraphicsView();
-    inline double singleSigma(double r);
+    inline double singleSigma(double r, double rEx);
     inline double singleSigmaT0(double E, double V, double r, double EFc);
     inline double sedlo(double E, double Ey, double Ex, double V);
     inline double cohU(double E, double Ey, double A, double V, double Uc);
@@ -105,20 +117,29 @@ private:
     QButtonGroup *typeResistor;
     QString curFile;
 
-    MyParamD T, U, Tmin, Tmax, dT, Umin, Umax, dU, Ex, Ey, rand, EF,EFT,fraction,portion;
-    MyParamI cols, rows, seed; 
-    MyParamD sigmaU, sigmaMin, r_c, capacity,deviation,a_barrier,Cg0, Delta_r,G_ser,EF0,kappa;
+    MyParamD T, U, Tmin, Tmax, dT, Umin, Umax, Vijmax, dU, Ex, deltaEx, Ey, rand, EF,EFT,fraction,portion;
+    MyParamI cols, rows, seed, i_Rcr; 
+    MyParamD sigmaU, sigmaMin, r_c, capacity,deviation,a_barrier,Cg0, Delta_r,G_ser,EF0,kappa,y_cr, CUTOFF_SIGMA;
     std::vector<double> EFTarray;
     std::vector<double> EFUarray;
     std::vector<double> AreaEf;
-    int numOfCurve;
+    std::vector<double> Anything;
+    int numOfCurve,numOfCurveI,numOfCurveJ,numOfCurveSig,numOfCurvedV;
     double gTun, gOv,randc,density;//, Exc, Eyc, randc;//,Gold;
     bool flgStop; 
+    QDialog *winPlotI;
+    QDialog *winPlotJ;
+    QDialog *winPlotG;
+    QDialog *winPlotV;
     QDialog *winPlotU;
     QDialog *winPlotCU;
     QDialog *winPlotT;
     QDialog *winPlotE;
     QDialog *winPlotCT;
+    Plotter *plotterV;
+    Plotter *plotterJ;
+    Plotter *plotterG;
+    Plotter *plotterI;
     Plotter *plotterU;
     Plotter *plotterT;
     Plotter *plotterE;

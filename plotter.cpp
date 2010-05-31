@@ -33,6 +33,13 @@ void Plotter::moveButtons()
 Plotter::Plotter(QWidget *parent, Qt::WindowFlags flags)
 : QWidget(parent, flags)
 {   
+//#ifndef QT_NO_CURSOR
+//     setCursor(Qt::CrossCursor);
+//#endif
+//    void mousePressEvent(QMouseEvent *event);
+//    void mouseMoveEvent(QmouseEvent *event);
+//    void mouseReleaseEvent(QmouseEvent *event);
+    QPoint xy_pos;
     setBackgroundRole(QPalette::Text);
     setAutoFillBackground ( true );
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -102,7 +109,7 @@ void Plotter::zoomOut()
 void Plotter::scaleX()
 {
         xScale++;
-        if(xScale==3) xScale=0;
+        if(xScale==4) xScale=0;
     this->captureBoundsToSettings();
         refreshPixmap();
 }
@@ -147,8 +154,9 @@ void Plotter::captureBoundsToSettings()
             double xd=data[2*i];
             double yd=data[2*i+1]; 
             if(yScale==1) yd=log10(yd);
-            if(xScale==1) xd=1./xd;
-           if(xScale==2) xd=log10(xd);
+            if(xScale==3) xd=1./xd;
+            if(xScale==2) xd=1./sqrt(xd);
+            if(xScale==1) xd=log10(xd);
 
             if (xd < xmin) xmin = xd;
             if (xd > xmax) xmax = xd;
@@ -219,7 +227,6 @@ void Plotter::resizeEvent(QResizeEvent *)
     moveButtons();
     refreshPixmap();
 } 
-
 void Plotter::mousePressEvent(QMouseEvent *event)
 {
     if (event->button()== Qt::LeftButton)
@@ -228,7 +235,8 @@ void Plotter::mousePressEvent(QMouseEvent *event)
         rubberBandRect.setTopLeft(event->pos());
         rubberBandRect.setBottomRight(event->pos());
         updateRubberBandRegion();
-        setCursor(Qt::CrossCursor);
+        setCursor(Qt::ClosedHandCursor);
+//        setCursor(Qt::CrossCursor);
     }
 }
 void Plotter::mouseMoveEvent(QMouseEvent *event)
@@ -252,7 +260,8 @@ void Plotter::mouseReleaseEvent(QMouseEvent *event)
     {
         rubberBandIsShown = false;
         updateRubberBandRegion();
-        unsetCursor();
+        setCursor(Qt::OpenHandCursor);
+//        unsetCursor();
         QRect rect = rubberBandRect.normalize();
         if(rect.width()<4||rect.height()<4)
             return;
@@ -271,6 +280,14 @@ void Plotter::mouseReleaseEvent(QMouseEvent *event)
         zoomStack.push_back(settings);
         zoomIn();
     }
+    if (event->button() == Qt::RightButton)
+    {
+   QPoint xy_pos = event->pos();
+   int ixmouse=xy_pos.x();
+   int iymouse=xy_pos.y();
+    
+    }
+
 }
 void Plotter::keyPressEvent(QKeyEvent *event)
 {
@@ -402,8 +419,9 @@ void Plotter::drawCurves(QPainter *painter)
             double xd=data[2*i];
             double yd=data[2*i+1]; 
             if(yScale==1) yd=log10(yd);
-            if(xScale==1) xd=1./xd;
-            if(xScale==2) xd=log10(xd);
+            if(xScale==3) xd=1./xd;
+            if(xScale==2) xd=1./sqrt(xd);
+            if(xScale==1) xd=log10(xd);
             double dx = xd-settings.minX;
             double dy = yd-settings.minY;
             double x = rect.left()+(dx*(rect.width()-1)/settings.spanX());
@@ -430,7 +448,7 @@ PlotSettings::PlotSettings()
     maxX = 10.0;
     numXTicks = 5;
     minY = 0.0;
-    maxY = 10.0;
+    maxY = 10.0; 
     numYTicks = 5;
 }
 void PlotSettings::scroll(int dx, int dy)

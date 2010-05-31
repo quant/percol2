@@ -37,6 +37,7 @@ void Percol2D::compute_general()
     int nv = this->nV(); // number of defined nodes
     int nw = this->nW(); // number of undefined nodes
     int ni = this->nI(); // number of current links
+//    int ndifV = this->nI(); // number of current links
 
     // Build LHS matrix = S_W^T SIGMA S_W
     Q3MemArray<double> lhs( nw*nw );
@@ -482,7 +483,25 @@ void Percol2D::compute()
         else
             this->I[i] += this->Sigma[i] * this->W[ends.second - nv];
     }
-//----------------------------------
+//-------voltage difference
+    double V_1,V_2,V12;
+    this->difV.fill(0.0);
+        for (int i = 0; i < ni; ++i)
+    {
+	QPair<int,int> ends_i = this->ends(i);
+    if(ends_i.first < nv) 
+        V_1=this->V[ends_i.first];
+    else 
+        V_1=this->W[ends_i.first-nv];
+    if(ends_i.second < nv) 
+        V_2=this->V[ends_i.second];
+    else 
+        V_2=this->W[ends_i.second-nv];
+    V12=(V_1-V_2);
+    this->difV[i]=(V_1-V_2);
+     }
+  
+    //----------------------------------
     double imax = -1e300;
     double q;
     for (int i = 0; i < ni; ++i)
@@ -509,6 +528,66 @@ void Percol2D::compute()
             (xy0.first==0&&xy1.first==1||xy0.first==1&&xy1.first==0)) I2=this->I[i];
     }
        conductivity = fabs(I1+I2)/2;
+//-------Joule heat
+    double IdVmax = -1e300;
+    double ImaxV = conductivity*4.;
+        {
+    double V_1,V_2,V12;
+    this->IdifV.fill(0.0);
+//    double IdVmax = -1e300;
+    double q;
+        for (int i = 0; i < ni; ++i)
+    {
+	QPair<int,int> ends_i = this->ends(i);
+    if(ends_i.first < nv) 
+        V_1=this->V[ends_i.first];
+    else 
+        V_1=this->W[ends_i.first-nv];
+    if(ends_i.second < nv) 
+        V_2=this->V[ends_i.second];
+    else 
+        V_2=this->W[ends_i.second-nv];
+    V12=(V_1-V_2);
+    q=fabs(this->I[i]*(V_1-V_2));
+//    this->IdifV[i]=q;
+    this->IdifV[i]=q/ImaxV;
+        if (q > IdVmax) 
+        {
+            IdVmax = q; 
+        }
+     }
+        }
+    //----------------------------------
+
+       //--------------Current Fraction----------------
+       {     
+        int nt=0;
+        int nS=0;
+        for (int i = 0; i < ni; ++i)
+        {   
+            double q = fabs(this->I[i]);
+            if(this->Sigma[i]!=100){
+                nS++;
+            if(q > imax * 1e-3) nt++;
+            }
+        }
+//   fractionI = double(nt)/double(ni);
+//   capacity = double(nt)/double(nS);
+       }
+//--------------Joule heat Fraction----------------
+       {     
+        int nt=0;
+        for (int i = 0; i < ni; ++i)
+        {   
+            double q = fabs(this->IdifV[i]);
+//            if(q > IdVmax * 0.1) nt++; 
+            if(q > IdVmax/ImaxV * 0.1) nt++; 
+        }
+//   fractionIdV = double(nt)/double(ni);
+   capacity = double(nt);///double(ni);
+       }
+//ниже фигня!!!
+        /*   
 //--------------CAPACITY----------------
        {     
         Q3MemArray<double> t( nv+nw );
@@ -524,12 +603,14 @@ void Percol2D::compute()
         nt=0;
         for (int v = 0; v < nv + nw; ++v)  
         {
-            if(t[v] > imax * 1e-3) 
+            if(t[v] > imax * 1e-4) 
+//            if(t[v] < imax * 1e-4) 
                 nt++;
         }
         capacity = double(nt)/double(nv+nw);
        }
-//--------------------------
+*/
+       //--------------------------
 
     for (int w = 0; w < nw; ++w)
     {
@@ -560,6 +641,8 @@ PercolRect::PercolRect(int _rows, int _cols) : rows(_rows), cols(_cols)
     V.resize(2);
     W.resize(rows*cols - 2);
     I.resize((rows-1)*cols + rows*(cols-1));
+    difV.resize((rows-1)*cols + rows*(cols-1));
+    IdifV.resize((rows-1)*cols + rows*(cols-1));
     Sigma.resize(I.size());
     V[0] = 1.0;
     V[1] = -1.0;
@@ -718,6 +801,22 @@ QPair<double,double> PercolRect::xy(int v) const
     return qMakePair(double(rc.second), double(rc.first));
 }
 
+int PercolRect::vnode(double x,double y) const
+{
+    RectHelper h(rows,cols);
+    int r = int(y > 0 ? y+0.5 : y-0.5); //nearest int
+    int c = int(x > 0 ? x+0.5 : x-0.5); //nearest int
+    return h.v(r,c);
+}
+
+/*QVector<int> PercolRect::index_for_sorted_W() const
+{
+    QVector<int> res(nW());
+    for (int i=0; i<res.size(); ++i) res[i] = i;
+    qSort(res.begin(),res.end(),W_lessthen);
+    return res;
+}
+*/
 double PercolRect::xmax() const { return cols-1; }
 double PercolRect::ymax() const { return rows-1; }
 double PercolRect::xmin() const { return 0; }
@@ -746,4 +845,132 @@ int Percol2D::index_of_Rcr() const
 	}
     }
     return i_max;
+}
+
+#include <QtAlgorithms>
+
+QVector<int> Percol2D::index_for_sorted_W() const
+{
+    QVector<int> res(nW());
+    for (int i=0; i<res.size(); ++i)
+    {
+        res[i] = i;
+    }
+
+    struct MyLessThan
+    {
+        const Q3MemArray<double>& w;
+        MyLessThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        bool operator()(int a, int b) const { return w[a] < w[b]; }
+    };
+
+    qSort(res.begin(),res.end(),MyLessThan(W));
+
+    return res;
+}
+QVector<int> Percol2D::index_for_sorted_I() const
+{
+    QVector<int> res(nI());
+    for (int i=0; i<res.size(); ++i)
+    {
+        res[i] = i;
+    }
+
+    struct MyGreaterThan
+//  struct MyLessThan
+    {
+        const Q3MemArray<double>& w;
+        MyGreaterThan(const Q3MemArray<double>& w_) : w(w_) {} 
+//        MyLessThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        bool operator()(int a, int b) const { return fabs(w[a]) >fabs(w[b]); }
+//      bool operator()(int a, int b) const { return fabs(w[a]) < fabs(w[b]); }
+    };
+
+    qSort(res.begin(),res.end(),MyGreaterThan(I));
+//  qSort(res.begin(),res.end(),MyLessThan(I));
+
+    return res;
+}
+QVector<int> Percol2D::index_for_sorted_difV() const
+{
+    QVector<int> res(nI());
+    for (int i=0; i<res.size(); ++i)
+    {
+        res[i] = i;
+    }
+
+/*    struct MyLessThan
+    {
+        const Q3MemArray<double>& w;
+        MyLessThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        bool operator()(int a, int b) const { return fabs(w[a]) < fabs(w[b]); }
+    };
+*/
+    struct MyGreaterThan
+    {
+        const Q3MemArray<double>& w;
+        MyGreaterThan(const Q3MemArray<double>& w_) : w(w_) {} 
+//        bool operator()(int a, int b) const { return w[a] > w[b]; }
+        bool operator()(int a, int b) const { return fabs(w[a]) > fabs(w[b]); }
+    };
+
+    qSort(res.begin(),res.end(),MyGreaterThan(difV));
+//    qSort(res.begin(),res.end(),MyLessThan(difV));
+
+    return res;
+}
+QVector<int> Percol2D::index_for_sorted_IdifV() const
+{
+    QVector<int> res(nI());
+    for (int i=0; i<res.size(); ++i)
+    {
+        res[i] = i;
+    }
+
+/*    struct MyLessThan
+    {
+        const Q3MemArray<double>& w;
+        MyLessThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        bool operator()(int a, int b) const { return fabs(w[a]) < fabs(w[b]); }
+    };
+*/
+    struct MyGreaterThan
+    {
+        const Q3MemArray<double>& w;
+        MyGreaterThan(const Q3MemArray<double>& w_) : w(w_) {} 
+//        bool operator()(int a, int b) const { return w[a] > w[b]; }
+        bool operator()(int a, int b) const { return fabs(w[a]) > fabs(w[b]); }
+    };
+
+    qSort(res.begin(),res.end(),MyGreaterThan(IdifV));
+//    qSort(res.begin(),res.end(),MyLessThan(difV));
+
+    return res;
+}
+QVector<int> Percol2D::index_for_sorted_Sigma() const
+{
+    QVector<int> res(nI());
+    for (int i=0; i<res.size(); ++i)
+    {
+        res[i] = i;
+    }
+/*
+    struct MyLessThan
+    {
+        const Q3MemArray<double>& w;
+        MyLessThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        bool operator()(int a, int b) const { return w[a] < w[b]; }
+    };
+    */
+    struct MyGreaterThan
+    {
+        const Q3MemArray<double>& w;
+        MyGreaterThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        bool operator()(int a, int b) const { return w[a] > w[b]; }
+    };
+
+    qSort(res.begin(),res.end(),MyGreaterThan(Sigma));
+//    qSort(res.begin(),res.end(),MyLessThan(Sigma));
+
+    return res;
 }
