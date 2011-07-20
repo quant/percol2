@@ -9,7 +9,7 @@
 #include "percol2d.h"
 
 //---------------------------------------------------------------------
-// Define main window 
+// Define main window
 extern double elementCr, sigma_m;
 
 struct X_of_T
@@ -66,11 +66,13 @@ struct MainWindow
     int typeResistor;
 
     double T, U, Tmin, Tmax, dT, Umin, Umax, dU, Ex, Ey, rand, EF,EFT,fraction;
-    int cols, rows, seed; 
+    int cols, rows, seed;
     double sigmaU, sigmaMin, r_c, capacity,deviation;
     std::vector<double> EFTarray;
     std::vector<double> EFUarray;
     std::vector<double> AreaEf;
+    std::vector<double> CondDist;
+    std::vector<double> NumJDist;
     double gTun, gOv,randc;
     double dispCond; // Display of condition number of last computation
     double dispCapac; // Display of capacity value of last computation

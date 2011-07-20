@@ -9,7 +9,7 @@
 #include "myparam.h"
 
 //---------------------------------------------------------------------
-// Define main window 
+// Define main window
 extern double elementCr, sigma_m;
 class MainWindow : public QMainWindow
 {
@@ -21,7 +21,6 @@ public:
 
 public slots:
     void help();
-    QVector<int> index_for_sorted_Anything() const;
 private slots:
     void chooseFont();
     void drawModelR();
@@ -76,19 +75,19 @@ private slots:
 protected:
     void resizeEvent( QResizeEvent * );
 
-    
+
 private:
     void slotWindows();
     void slotWindowsActivated(int);
-    void initPlotterT(); 
-    void initPlotterE(); 
+    void initPlotterT();
+    void initPlotterE();
     void initPlotterU();
     void initPlotCurrent();
     void initPlotVoltage();
     void initPlotJouleHeat();
     void initPlotConductance();
-    void initPlotterCU(); 
-    void initPlotterCT(); 
+    void initPlotterCU();
+    void initPlotterCT();
     void mysort(std::vector<double> &v);
     void randomizeSigma_0();
     void randomizeSigma_1();
@@ -118,15 +117,18 @@ private:
     QString curFile;
 
     MyParamD T, U, Tmin, Tmax, dT, Umin, Umax, Vijmax, dU, Ex, deltaEx, Ey, rand, EF,EFT,fraction,portion;
-    MyParamI cols, rows, seed, i_Rcr; 
+    MyParamI cols, rows, seed, i_Rcr;
     MyParamD sigmaU, sigmaMin, r_c, capacity,deviation,a_barrier,Cg0, Delta_r,G_ser,EF0,kappa,y_cr, CUTOFF_SIGMA;
     std::vector<double> EFTarray;
     std::vector<double> EFUarray;
     std::vector<double> AreaEf;
-    std::vector<double> Anything;
+    std::vector<double> CondDist;
+    std::vector<double> NumJDist;
+    std::vector<int> index_for_sorted_CondDist() const;
+    std::vector<int> index_for_sorted_NumJDist() const;
     int numOfCurve,numOfCurveI,numOfCurveJ,numOfCurveSig,numOfCurvedV;
     double gTun, gOv,randc,density;//, Exc, Eyc, randc;//,Gold;
-    bool flgStop; 
+    bool flgStop;
     QDialog *winPlotI;
     QDialog *winPlotJ;
     QDialog *winPlotG;

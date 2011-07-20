@@ -1,6 +1,6 @@
 *.obj
-/debug
-/t
+debug
+release
 *.ncb
 *.suo
 *.vcproj*

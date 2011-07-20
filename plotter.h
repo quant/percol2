@@ -47,7 +47,7 @@ protected:
     void keyPressEvent(QKeyEvent *event);
     void wheelEvent(QWheelEvent *event);
     void enterEvent(QEvent *event);
-private: 
+private:
     void moveButtons();
     void updateRubberBandRegion();
     void refreshPixmap();

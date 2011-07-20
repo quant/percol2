@@ -5,9 +5,10 @@
 #include <QCursor>
 
 
-//const double CUTOFF_SIGMA = 1e-15;
+const double Cond_min = 1e-12;
 const int NCUT = 1e4;
 const int nJ=5000;
+
 //const double Delta_r=35;//15; //nm
 const double E0=560.;//meV
 const double Vg0=50;
@@ -25,15 +26,15 @@ protected:
     friend class ColorScale2;
 public:
     ColorScale() : v0(0), v1(1), c0(Qt::red), c1(Qt::blue) {}
-    void setRange(double vmin,double vmax) 
-    { 
-        v0 = vmin; v1 = vmax; 
+    void setRange(double vmin,double vmax)
+    {
+        v0 = vmin; v1 = vmax;
     }
-    void setColors(QColor cmin,QColor cmax) 
-    { 
-        c0 = cmin; c1 = cmax; 
+    void setColors(QColor cmin,QColor cmax)
+    {
+        c0 = cmin; c1 = cmax;
     }
-    QColor color(double v) const 
+    QColor color(double v) const
     {
         if (v <= v0) return c0;
         if (v >= v1) return c1;
@@ -49,21 +50,21 @@ class ColorScale2
     ColorScale a,b;
 public:
     ColorScale2() {}
-    void setRange(double vmin,double vmax) 
-    { 
+    void setRange(double vmin,double vmax)
+    {
         double vmid = 0.5 *( vmax + vmin );
         a.setRange(vmin, vmid);
         b.setRange(vmid, vmax);
     }
-    void setColors(QColor cmin,QColor cmax) 
-    { 
+    void setColors(QColor cmin,QColor cmax)
+    {
         int r0,g0,b0,r1,g1,b1;
         cmin.getRgb(&r0,&g0,&b0);
         cmax.getRgb(&r1,&g1,&b1);
         a.setColors(cmin,QColor(0.5*(r0+r1),0.5*(g0+g1),0.5*(b0+b1)));
         b.setColors(QColor(0.5*(r0+r1),0.5*(g0+g1),0.5*(b0+b1)),cmax);
     }
-    QColor color(double v) const 
+    QColor color(double v) const
     {
         if (v < a.v0) return a.c0;
         if (v < b.v0) return a.color(v);
@@ -85,7 +86,7 @@ ColorScale2 csS; // Sigma scale and edge coloring
 class DoubleValidator : public QRegExpValidator
 {
 public:
-    DoubleValidator(QWidget *parent) : QRegExpValidator(parent) 
+    DoubleValidator(QWidget *parent) : QRegExpValidator(parent)
     {
         const QRegExp x(QString("[+-]?\\d+\\.?\\d*([dDe][+-]?\\d+)?"));
         setRegExp(x);
@@ -96,7 +97,7 @@ public:
 class PosIntValidator : public QRegExpValidator
 {
 public:
-    PosIntValidator(QWidget *parent) : QRegExpValidator(parent) 
+    PosIntValidator(QWidget *parent) : QRegExpValidator(parent)
     {
         const QRegExp x(QString("\\d+"));
         setRegExp(x);
@@ -122,14 +123,14 @@ void MainWindow::initMenuBar()
     connect(chooseFontAction, SIGNAL(activated()), this, SLOT(chooseFont()));
     connect(saveAction, SIGNAL(activated()), this, SLOT(saveAs()));
     connect(openAction, SIGNAL(activated()), this, SLOT(open()));
-    
 
-    QMenu* file = menuBar()->addMenu("Menu"); 
-    file->addAction(saveAction);  
-    file->addAction(openAction);  
-    file->addAction(chooseFontAction);  
+
+    QMenu* file = menuBar()->addMenu("Menu");
+    file->addAction(saveAction);
+    file->addAction(openAction);
+    file->addAction(chooseFontAction);
     file->addSeparator();
-    file->addAction(exitAction);  
+    file->addAction(exitAction);
 
 //    menu->insertSeparator();
 
@@ -141,7 +142,7 @@ void MainWindow::initMenuBar()
 }
 void MainWindow::initToolBar()
 {
-    QPixmap pix(15,15); 
+    QPixmap pix(15,15);
     pix.fill(Qt::red);
 
     QAction *criticalElement = new QAction("Critical Element", this);
@@ -195,9 +196,9 @@ void MainWindow::initStatusBar()
 
 void MainWindow::initControlDockWindow()
 {
-   
+
      QDockWidget *myDockWidget = new QDockWidget(tr("Control Panel"),this);
-     myDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea); 
+     myDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
      addDockWidget(Qt::RightDockWidgetArea, myDockWidget);
      QWidget *control = new QWidget();
      QVBoxLayout *vl0 = new QVBoxLayout(control);
@@ -208,7 +209,7 @@ void MainWindow::initControlDockWindow()
         sizePolicy.setVerticalStretch(0);
         sizePolicy.setHeightForWidth(gb1->sizePolicy().hasHeightForWidth());
         gb1->setSizePolicy(sizePolicy);
-    
+
         QGroupBox *gb2 = new QGroupBox(tr("Resistor Network"), control);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -243,7 +244,7 @@ void MainWindow::initControlDockWindow()
                 QPushButton *bL  = new QPushButton(tr("E_F for given T,U"));
                 connect(bL,SIGNAL(clicked()), this, SLOT(computeEF_TU()));
                 L->addWidget(bL);
-                QPushButton *computeDensityButton = new QPushButton(tr("density(U)")); 
+                QPushButton *computeDensityButton = new QPushButton(tr("density(U)"));
                 connect(computeDensityButton,SIGNAL(clicked()), this, SLOT(compute_nU()));
                 L->addWidget(computeDensityButton);
                 L->addStretch(1);
@@ -260,7 +261,7 @@ void MainWindow::initControlDockWindow()
                 this->Cg0.setDisplay(("Cg"), R);
                 this->G_ser.setDisplay(("G_ser"), R);
                 this->y_cr.setDisplay(("y_cr"), R);
-//                QPushButton *computeDensityButton = new QPushButton(tr("density(U)")); 
+//                QPushButton *computeDensityButton = new QPushButton(tr("density(U)"));
 //                connect(computeDensityButton,SIGNAL(clicked()), this, SLOT(compute_nU()));
 //                R->addWidget(computeDensityButton);
 
@@ -270,8 +271,8 @@ void MainWindow::initControlDockWindow()
                 typeCond->addItem(tr("Over-barrier G"));
                 typeCond->addItem(tr("Tunnel+Over-barrier G"));
                 typeCond->addItem(tr("G(E_F0)"));
-                typeCond->setCurrentIndex(3); 
-                R->addWidget(typeCond);             
+                typeCond->setCurrentIndex(3);
+                R->addWidget(typeCond);
                 R->addStretch(1);
            }
             /* now fill gb/Compute Conductance G */
@@ -289,22 +290,22 @@ void MainWindow::initControlDockWindow()
                 QPushButton *b4  = new QPushButton(tr("E_F(U)"));
 ////                QPushButton *b4  = new QPushButton(tr("Area(E)"));
                 connect(b4,SIGNAL(clicked()), this, SLOT(computeAreaE()));
-  
+
 /*                typeCond = new QComboBox;
                 typeCond->addItem(tr("Total conductance"));
                 typeCond->addItem(tr("Tunnel conductance"));
                 typeCond->addItem(tr("Over-barrier G"));
                 typeCond->addItem(tr("Tunnel+Over-barrier G"));
                 typeCond->addItem(tr("G(E_F0)"));
-                typeCond->setCurrentIndex(0); 
-*/ 
+                typeCond->setCurrentIndex(0);
+*/
                 hl->addWidget(b1);
-                hl->addWidget(b2);             
-                hl->addWidget(b3); 
-                hl->addWidget(b4);             
-            }            
-        }        
- 
+                hl->addWidget(b2);
+                hl->addWidget(b3);
+                hl->addWidget(b4);
+            }
+        }
+
         /* now fill gb2/ResistorNetwork */
         QVBoxLayout *vl3 = new QVBoxLayout(gb2);
         vl0->addWidget(gb2);
@@ -319,18 +320,18 @@ void MainWindow::initControlDockWindow()
             hl3->addWidget(gb4);
             hl3->addWidget(gb5);
             vl3->addLayout(hl3);
-        
+
             /* now fill LR */
             QVBoxLayout *L = new QVBoxLayout(hlLR);
             {
                 QGroupBox *gbRType = new QGroupBox(tr("Resistor Network Type"));
                 L->addWidget(gbRType);
 
-                QRadioButton *type1 = new QRadioButton(tr("RNW Exp(-kappa*x)"));  
-//                QRadioButton *type1 = new QRadioButton(tr("Одинаковые сопротивления"));  
-                QRadioButton *type2 = new QRadioButton(tr("RNW 0 or 1"));  
+                QRadioButton *type1 = new QRadioButton(tr("RNW Exp(-kappa*x)"));
+//                QRadioButton *type1 = new QRadioButton(tr("Одинаковые сопротивления"));
+                QRadioButton *type2 = new QRadioButton(tr("RNW 0 or 1"));
                 QRadioButton *type3 = new QRadioButton(tr("model RNW"));
-                
+
                 QVBoxLayout *vbox = new QVBoxLayout(gbRType);
                 vbox->addWidget(type1);
                 vbox->addWidget(type2);
@@ -349,7 +350,7 @@ void MainWindow::initControlDockWindow()
     this->kappa.setDisplay(("kappa"), L);
 //    this->Vijmax.setDisplay(("deltaVijmax"), L);
 //    this->portion.setDisplay(("portion"), L);
- 
+
             }
             QVBoxLayout *R = new QVBoxLayout(hlLR);
             {
@@ -370,68 +371,68 @@ void MainWindow::initControlDockWindow()
 //     this->sigmaMin.setDisplay(("sigmaMin"), Hcr);
 //     Hcr->addWidget(critElem);
             }
-            
-    
+
+
             /* now fill gb0/Canvas Image */
 //           QVBoxLayout *vl = new QVBoxLayout(hl3);
            QVBoxLayout *vl = new QVBoxLayout(gb3);
             {
-                QPushButton *computeButton = new QPushButton(tr("Compute")); 
+                QPushButton *computeButton = new QPushButton(tr("Compute"));
                 computeButton->setDefault(true);
                 connect(computeButton, SIGNAL(clicked()), this, SLOT(computeModel()));
 
-                QPushButton *drawResButton = new QPushButton(tr("Conductivity network")); 
+                QPushButton *drawResButton = new QPushButton(tr("Conductivity network"));
                 connect(drawResButton,SIGNAL(clicked()), this, SLOT(drawModelR()));
 
-                QPushButton *drawCurButton = new QPushButton(tr("Draw Current I")); 
+                QPushButton *drawCurButton = new QPushButton(tr("Draw Current I"));
                 connect(drawCurButton,SIGNAL(clicked()), this, SLOT(drawModelI()));
 
-                QPushButton *drawVButton = new QPushButton(tr("Draw Voltage V")); 
+                QPushButton *drawVButton = new QPushButton(tr("Draw Voltage V"));
                 connect(drawVButton,SIGNAL(clicked()), this, SLOT(drawModelV()));
- 
 
-                QPushButton *drawJButton = new QPushButton(tr("Draw Heat I*V")); 
+
+                QPushButton *drawJButton = new QPushButton(tr("Draw Heat I*V"));
                 connect(drawJButton,SIGNAL(clicked()), this, SLOT(drawModelJ()));
 
-                QPushButton *drawdVButton = new QPushButton(tr("Draw dV")); 
+                QPushButton *drawdVButton = new QPushButton(tr("Draw dV"));
                 connect(drawdVButton,SIGNAL(clicked()), this, SLOT(drawModeldV()));
 
-                QPushButton *clearButton = new QPushButton(tr("Clear")); 
+                QPushButton *clearButton = new QPushButton(tr("Clear"));
                 connect(clearButton,SIGNAL(clicked()), this, SLOT(clearScene()));
 
-                
- 
+
+
                 vl->addWidget(computeButton);
                 vl->addWidget(drawResButton);
-                vl->addWidget(drawCurButton);             
-                vl->addWidget(drawdVButton);             
+                vl->addWidget(drawCurButton);
+                vl->addWidget(drawdVButton);
                 vl->addWidget(drawVButton);
                 vl->addWidget(drawJButton);
                 vl->addWidget(clearButton);
                 vl->addStretch(1);
 
-            }            
+            }
            QVBoxLayout *vl1 = new QVBoxLayout(gb4);
             {
-                QPushButton *stopB = new QPushButton(tr("STOP")); 
+                QPushButton *stopB = new QPushButton(tr("STOP"));
                 connect(stopB, SIGNAL(clicked()), this, SLOT(stopCalc()));
- 
-                QPushButton *xB = new QPushButton(tr("Conductivity(x)")); 
+
+                QPushButton *xB = new QPushButton(tr("Conductivity(x)"));
                 connect(xB,SIGNAL(clicked()), this, SLOT(computeRX()));
 
-                QPushButton *uB = new QPushButton(tr("Conductivity(U)")); 
+                QPushButton *uB = new QPushButton(tr("Conductivity(U)"));
                 connect(uB,SIGNAL(clicked()), this, SLOT(computeRU()));
 
-                QPushButton *ueffB = new QPushButton(tr("Effective Gm(U)")); 
+                QPushButton *ueffB = new QPushButton(tr("Effective Gm(U)"));
                 connect(ueffB,SIGNAL(clicked()), this, SLOT(computeReffU()));
 
-                QPushButton *VmaxB = new QPushButton(tr("Vmax(U)")); 
+                QPushButton *VmaxB = new QPushButton(tr("Vmax(U)"));
                 connect(VmaxB,SIGNAL(clicked()), this, SLOT(computeVimax()));
 
-                QPushButton *rcB = new QPushButton(tr("Conductivity(rc)")); 
+                QPushButton *rcB = new QPushButton(tr("Conductivity(rc)"));
                 connect(rcB,SIGNAL(clicked()), this, SLOT(computeRrc()));
 
-                QPushButton *dB = new QPushButton(tr("Deviation")); 
+                QPushButton *dB = new QPushButton(tr("Deviation"));
                 connect(dB,SIGNAL(clicked()), this, SLOT(compute_deviation()));
 
                 vl1->addWidget(stopB);
@@ -442,47 +443,47 @@ void MainWindow::initControlDockWindow()
                 vl1->addWidget(rcB);
                 vl1->addWidget(dB);
                 vl1->addStretch(1);
- 
+
             }
 //           QVBoxLayout *vl2 = new QVBoxLayout(hl3);
           QVBoxLayout *vl2 = new QVBoxLayout(gb5);
             {
-                QPushButton *cuB = new QPushButton(tr("Capacity(U)")); 
+                QPushButton *cuB = new QPushButton(tr("Capacity(U)"));
                 connect(cuB,SIGNAL(clicked()), this, SLOT(computeCapacityU()));
 
-                QPushButton *ctB = new QPushButton(tr("Capacity(T)")); 
+                QPushButton *ctB = new QPushButton(tr("Capacity(T)"));
                 connect(ctB,SIGNAL(clicked()), this, SLOT(computeCapacityT()));
 
-                QPushButton *gtB = new QPushButton(tr("Conductivity(T)")); 
+                QPushButton *gtB = new QPushButton(tr("Conductivity(T)"));
                 connect(gtB,SIGNAL(clicked()), this, SLOT(computeRT()));
 
-                QPushButton *gteffB = new QPushButton(tr("Effective Gm(T)")); 
+                QPushButton *gteffB = new QPushButton(tr("Effective Gm(T)"));
                 connect(gteffB,SIGNAL(clicked()), this, SLOT(computeReffT()));
 
-//                QPushButton *pVb = new QPushButton(tr("pVoltage")); 
+//                QPushButton *pVb = new QPushButton(tr("pVoltage"));
 //                connect(pVb,SIGNAL(clicked()), this, SLOT(compute_pV()));
-                QPushButton *pVb = new QPushButton(tr("Voltage(x) at y=y_cr")); 
+                QPushButton *pVb = new QPushButton(tr("Voltage(x) at y=y_cr"));
                 connect(pVb,SIGNAL(clicked()), this, SLOT(compute_Vx()));
 //                connect(pVb,SIGNAL(clicked()), this, SLOT(compute_deltaVx()));
 
-//                QPushButton *pSVb = new QPushButton(tr("pSmallVoltage")); 
+//                QPushButton *pSVb = new QPushButton(tr("pSmallVoltage"));
 //                connect(pSVb,SIGNAL(clicked()), this, SLOT(compute_p_small_V()));
 
-                QPushButton *pdVb = new QPushButton(tr("pdeltaV")); 
+                QPushButton *pdVb = new QPushButton(tr("pdeltaV"));
                 connect(pdVb,SIGNAL(clicked()), this, SLOT( compute_pdV()));
 
-                QPushButton *pSdVb = new QPushButton(tr("pSmalldeltaV")); 
+                QPushButton *pSdVb = new QPushButton(tr("pSmalldeltaV"));
                 connect(pSdVb,SIGNAL(clicked()), this, SLOT(compute_p_small_dV()));
 
-//                QPushButton *pC = new QPushButton(tr("pCurrent")); 
+//                QPushButton *pC = new QPushButton(tr("pCurrent"));
 //                connect(pC,SIGNAL(clicked()), this, SLOT(compute_pCurrent()));
 
-                QPushButton *cpSB = new QPushButton(tr("pSigma")); 
+                QPushButton *cpSB = new QPushButton(tr("pSigma"));
                 connect(cpSB,SIGNAL(clicked()), this, SLOT(compute_pSigma()));
 
-//               QPushButton *cSpSB = new QPushButton(tr("Sum_pSigma")); 
+//               QPushButton *cSpSB = new QPushButton(tr("Sum_pSigma"));
 //                connect(cSpSB,SIGNAL(clicked()), this, SLOT(compute_SumpSigma()));
-             
+
                 vl2->addWidget(cuB);
                 vl2->addWidget(ctB);
                 vl2->addWidget(gtB);
@@ -495,18 +496,18 @@ void MainWindow::initControlDockWindow()
                 vl2->addWidget(cpSB);
  //               vl2->addWidget(cSpSB);
                 vl2->addStretch(1);
- 
+
             }
 
- }        
+ }
 
     }
     vl0->addStretch(1);
 
     myDockWidget->setWidget(control);
- 
 
-} 
+
+}
 
 
 void MainWindow::initGraphicsView()
@@ -516,7 +517,7 @@ void MainWindow::initGraphicsView()
     setCentralWidget(this->gv);
     this->gv->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 }
-void MainWindow::initPlotCurrent() 
+void MainWindow::initPlotCurrent()
 {
     winPlotI = new QDialog(this);
     winPlotI->setCaption(tr("Distribution of current:"));
@@ -525,7 +526,7 @@ void MainWindow::initPlotCurrent()
     this->plotterI->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterI);
 }
-void MainWindow::initPlotVoltage() 
+void MainWindow::initPlotVoltage()
 {
     winPlotV = new QDialog(this);
     winPlotV->setCaption(tr("Distribution of voltage:"));
@@ -534,7 +535,7 @@ void MainWindow::initPlotVoltage()
     this->plotterV->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterV);
 }
-void MainWindow::initPlotJouleHeat() 
+void MainWindow::initPlotJouleHeat()
 {
     winPlotJ = new QDialog(this);
     winPlotJ->setCaption(tr("Distribution of Joule Heat:"));
@@ -543,7 +544,7 @@ void MainWindow::initPlotJouleHeat()
     this->plotterJ->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterJ);
 }
-void MainWindow::initPlotConductance() 
+void MainWindow::initPlotConductance()
 {
     winPlotG = new QDialog(this);
     winPlotG->setCaption(tr("Distribution of conductance:"));
@@ -552,7 +553,7 @@ void MainWindow::initPlotConductance()
     this->plotterG->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterG);
 }
-void MainWindow::initPlotterU() 
+void MainWindow::initPlotterU()
 {
     winPlotU = new QDialog(this);
     winPlotU->setCaption(tr("Dependences G(U):"));
@@ -564,7 +565,7 @@ void MainWindow::initPlotterU()
 }
 
 
-void MainWindow::initPlotterT() 
+void MainWindow::initPlotterT()
 {
     winPlotT = new QDialog(this);
     winPlotT->setFocus();
@@ -574,7 +575,7 @@ void MainWindow::initPlotterT()
     this->plotterT->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterT);
 }
-void MainWindow::initPlotterE() 
+void MainWindow::initPlotterE()
 {
     winPlotE = new QDialog(this);
     winPlotE->setFocus();
@@ -584,7 +585,7 @@ void MainWindow::initPlotterE()
     this->plotterE->setCurveData(1, this->plotdata);
     layout->addWidget(this->plotterE);
 }
-void MainWindow::initPlotterCT() 
+void MainWindow::initPlotterCT()
 {
     winPlotCT = new QDialog(this);
     winPlotCT->setCaption(tr("Capacity(T):"));
@@ -605,25 +606,25 @@ void MainWindow::initPlotterCU()
 }
 
 void MainWindow::setModel()
-{   
+{
     if (model) delete model;
     model = new PercolRect(this->rows,this->cols);
 }
 MainWindow::MainWindow(QWidget *parent, Qt::WFlags f)
-: randc(0.5), 
-//Exc(5.), Eyc(5.), 
+: randc(0.5),
+//Exc(5.), Eyc(5.),
 density(1000.),sigmaU(1.e2), flgStop(false),portion(0.01),
 T(0.13), Tmin(0.1),Tmax(5.301), dT(0.1), //Gold(0.0),
-U(155.), Umin(155.), Umax(240.), dU(5.),i_Rcr(0),CUTOFF_SIGMA(1.e-15), 
-//U(950), Umin(200.), Umax(1500), dU(5.), 
-r_c(0.0), Ex(20.), deltaEx(0.), Vijmax(2.), Ey(6.), rand(0.5), EF(22),EFT(22.),kappa(10.),y_cr(15), 
+U(155.), Umin(155.), Umax(240.), dU(5.),i_Rcr(0),CUTOFF_SIGMA(1.e-15),
+//U(950), Umin(200.), Umax(1500), dU(5.),
+r_c(0.0), Ex(20.), deltaEx(0.), Vijmax(2.), Ey(6.), rand(0.5), EF(22),EFT(22.),kappa(10.),y_cr(15),
 a_barrier(150.), Cg0(-0.12),Delta_r(30.),G_ser(3.0),EF0(22.),
 QMainWindow(parent,f),
 rows(30), cols(53), numOfCurve(1), seed(1), model(0)
 
 {
-    this->initMenuBar(); 
-    this->initToolBar(); 
+    this->initMenuBar();
+    this->initToolBar();
     this->initStatusBar();
     this->initPlotCurrent();
     this->initPlotVoltage();
@@ -643,8 +644,8 @@ rows(30), cols(53), numOfCurve(1), seed(1), model(0)
 
 bool MainWindow::open()
 {
-       
-     QString fn = QFileDialog::getOpenFileName( this, 
+
+     QString fn = QFileDialog::getOpenFileName( this,
                          tr("Choose a file name"), ".",
                          tr("*.dat*"));
     if ( !fn.isEmpty() ) {
@@ -670,7 +671,7 @@ bool MainWindow::read()
 }
 bool MainWindow::saveAs()
 {
-     QString fn = QFileDialog::getSaveFileName( this, 
+     QString fn = QFileDialog::getSaveFileName( this,
                          tr("Choose a file name"), ".",
                          tr("*.dat*"));
     if ( !fn.isEmpty() ) {
@@ -688,7 +689,6 @@ bool MainWindow::save()
     }
     QString nV=this->curFile+"V";
     QFile fV(nV);
-//    QFile f(this->curFile);
     if(fV.exists()){
         int n=QMessageBox::warning(0,
             tr("Warning"),
@@ -721,8 +721,8 @@ bool MainWindow::save()
     QPair<int,int> endsRcr = model->ends(i_Rcr);
     QPair<double,double> xy0Rcr = model->xy(endsRcr.first);
     QPair<double,double> xy1Rcr = model->xy(endsRcr.second);
-    double x=0.5*(xy0Rcr.first+xy1Rcr.first);  
-    double y=0.5*(xy0Rcr.second+xy1Rcr.second);  
+    double x=0.5*(xy0Rcr.first+xy1Rcr.first);
+    double y=0.5*(xy0Rcr.second+xy1Rcr.second);
     QString s2;
     s2.sprintf("%lg %lg %lg\n",x,y,sigma_cr);
     o << s2;
@@ -747,7 +747,8 @@ bool MainWindow::save()
         o << ss;
         fV.close();
 //    statusBar()->showMessage(tr("Saved '%1'").arg(fV), 2009);
-    QString nC=this->curFile+"C";
+
+        QString nC=this->curFile+"C";
     QFile fC(nC);
 //    QFile f(this->curFile);
 
@@ -776,15 +777,86 @@ bool MainWindow::save()
         QPair<int,int> ends = model->ends(e);
         QPair<double,double> xy0 = model->xy(ends.first);
         QPair<double,double> xy1 = model->xy(ends.second);
-        x=0.5*(xy0.first+xy1.first);  
-        y=0.5*(xy0.second+xy1.second);  
+        x=0.5*(xy0.first+xy1.first);
+        y=0.5*(xy0.second+xy1.second);
         QString s;
  //       QPair<int,int> from_to = model->ends(e);
         s.sprintf("%lg %lg %lg\n",x,y, fabs(model->I[e]));
         oC << s;
     }
     fC.close();
-//    statusBar()->showMessage(tr("Saved '%1'").arg(fC), 2009);
+
+    QString nJ=this->curFile+"J";
+    QFile fJ(nJ);
+    if(fJ.exists()){
+        int n=QMessageBox::warning(0,
+            tr("Warning"),
+            "File with this name has already existed,"
+            "\n Do you want to rewrite it?",
+            "Yes",
+            "No",
+            QString::null,
+            0,
+            1
+            );
+        if(n){
+           return this->saveAs(); //выбираем новое имя
+        }
+    }
+    //Saving the file!
+    fJ.open(QIODevice::WriteOnly|QIODevice::Truncate);
+
+    QTextStream oJ(&fJ);
+    oJ << "Joule Heat at centers of edges\n";
+    for (int e = 0; e < model->nI(); ++e)
+    {
+        QPair<int,int> ends = model->ends(e);
+        QPair<double,double> xy0 = model->xy(ends.first);
+        QPair<double,double> xy1 = model->xy(ends.second);
+        x=0.5*(xy0.first+xy1.first);
+        y=0.5*(xy0.second+xy1.second);
+        QString s;
+        s.sprintf("%lg %lg %lg\n",x,y, model->IdifV[e]);
+        oJ << s;
+    }
+    fJ.close();
+
+    QString ndV=this->curFile+"dV";
+    QFile fdV(ndV);
+    if(fdV.exists()){
+        int n=QMessageBox::warning(0,
+            tr("Warning"),
+            "File with this name has already existed,"
+            "\n Do you want to rewrite it?",
+            "Yes",
+            "No",
+            QString::null,
+            0,
+            1
+            );
+        if(n){
+           return this->saveAs(); //выбираем новое имя
+        }
+    }
+    //Saving the file!
+    fdV.open(QIODevice::WriteOnly|QIODevice::Truncate);
+
+    QTextStream odV(&fdV);
+    odV << "Voltage difference at centers of edges\n";
+    for (int e = 0; e < model->nI(); ++e)
+    {
+        QPair<int,int> ends = model->ends(e);
+        QPair<double,double> xy0 = model->xy(ends.first);
+        QPair<double,double> xy1 = model->xy(ends.second);
+        x=0.5*(xy0.first+xy1.first);
+        y=0.5*(xy0.second+xy1.second);
+        QString s;
+        s.sprintf("%lg %lg %lg\n",x,y, fabs(model->difV[e]));
+        odV << s;
+    }
+    fdV.close();
+
+    //    statusBar()->showMessage(tr("Saved '%1'").arg(fC), 2009);
     return TRUE;
 }
 
@@ -835,8 +907,8 @@ class NodeItemFactory
     QPair<double,double> offset;
     int blob_size;
 public:
-    NodeItemFactory( QGraphicsScene *_canvas, ColorScale *_cs, 
-        double _scale, QPair<double,double> _offset, int _blob_size = 2 ) 
+    NodeItemFactory( QGraphicsScene *_canvas, ColorScale *_cs,
+        double _scale, QPair<double,double> _offset, int _blob_size = 2 )
         : canvas(_canvas), cs(_cs), scale(_scale), offset(_offset), blob_size(_blob_size) {}
 //    Q3CanvasEllipse *newVnode(double v, QPair<double,double> xy)
     QGraphicsEllipseItem *newVnode(double v, QPair<double,double> xy)
@@ -871,7 +943,7 @@ class EdgeItemFactory
     QPair<double,double> offset;
 public:
     EdgeItemFactory( QGraphicsScene *_canvas, ColorScale2 *_cs,
-        double _scale, QPair<double,double> _offset ) 
+        double _scale, QPair<double,double> _offset )
         : canvas(_canvas), cs(_cs), scale(_scale), offset(_offset) {}
     QGraphicsLineItem *newEdge(double c, QPair<double,double> xy0, QPair<double,double> xy1)
     {   int canvasx0 = (xy0.first - offset.first) * scale;//- 0.5*blob_size;
@@ -912,7 +984,7 @@ void MainWindow::drawModelV()
     double xscale = factor * scene->width()  / (model->xmax() - model->xmin());
     double yscale = factor * scene->height() / (model->ymax() - model->ymin());
     double scale = xscale < yscale ? xscale : yscale;
-    
+
     QPair<double,double> offset;
     offset.first = -0.5 * (model->xmax() - model->xmin()) * (1.0 - factor) / factor;
     offset.second = -0.5 * (model->ymax() - model->ymin()) * (1.0 - factor) / factor;
@@ -942,7 +1014,7 @@ void MainWindow::drawModelV()
 
     NodeItemFactory vfactory(scene,&csV,scale,offset);
     vfactory.setBlobSize(2);//!!!
-        
+
     for (int v = 0; v < model->nV(); ++v)
     {
         double V = model->V[v];
@@ -979,7 +1051,7 @@ void MainWindow::drawModelI()
     double xscale = factor * scene->width()  / (model->xmax() - model->xmin());
     double yscale = factor * scene->height() / (model->ymax() - model->ymin());
     double scale = xscale < yscale ? xscale : yscale;
-    
+
     QPair<double,double> offset;
     offset.first = -0.5 * (model->xmax() - model->xmin()) * (1.0 - factor) / factor;
     offset.second = -0.5 * (model->ymax() - model->ymin()) * (1.0 - factor) / factor;
@@ -988,14 +1060,14 @@ void MainWindow::drawModelI()
     double imin = 1e300, imax = -1e300;
     double q;
     for (int i = 0; i < model->nI(); ++i)
-    {   
+    {
         q = (model->I[i]);
-        if (fabs(q) > imax&&model->Sigma[i]!=this->sigmaU) 
+        if (fabs(q) > imax&&model->Sigma[i]!=this->sigmaU)
         {
-            imax = fabs(q); 
+            imax = fabs(q);
             emax=i;
         }
-        if (fabs(q) < imin) 
+        if (fabs(q) < imin)
             imin = fabs(q);
     }
 
@@ -1022,7 +1094,7 @@ void MainWindow::drawModelI()
         }
     }
     //setMouseTracking( TRUE );
-  
+
 
 #if 0
     ColorScale csDI;
@@ -1066,7 +1138,7 @@ void MainWindow::drawModeldV()
     double xscale = factor * scene->width()  / (model->xmax() - model->xmin());
     double yscale = factor * scene->height() / (model->ymax() - model->ymin());
     double scale = xscale < yscale ? xscale : yscale;
-    
+
     QPair<double,double> offset;
     offset.first = -0.5 * (model->xmax() - model->xmin()) * (1.0 - factor) / factor;
     offset.second = -0.5 * (model->ymax() - model->ymin()) * (1.0 - factor) / factor;
@@ -1089,7 +1161,7 @@ void MainWindow::drawModeldV()
         Vij[i]=V_i;
 //	double IV_i = fabs(I_i * V_i);
         double q = V_i;
-        if (q > Vmax) Vmax = q; 
+        if (q > Vmax) Vmax = q;
         if (q < Vmin) Vmin = q;
     }
 //--------
@@ -1106,13 +1178,13 @@ void MainWindow::drawModeldV()
         QPair<int,int> ends = model->ends(idx[e]);
         QPair<double,double> xy0 = model->xy(ends.first);
         QPair<double,double> xy1 = model->xy(ends.second);
-        q=fabs(model->difV[idx[e]]);  
+        q=fabs(model->difV[idx[e]]);
         //        q=Vij[e];
 //        if(q>0.1*Vmax){
         if(q>0.01) QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
 //        }
     }
- 
+
 
     scene->update();
     this->gv->update();
@@ -1130,7 +1202,7 @@ void MainWindow::drawModelJ()
     double xscale = factor * scene->width()  / (model->xmax() - model->xmin());
     double yscale = factor * scene->height() / (model->ymax() - model->ymin());
     double scale = xscale < yscale ? xscale : yscale;
-    
+
     QPair<double,double> offset;
     offset.first = -0.5 * (model->xmax() - model->xmin()) * (1.0 - factor) / factor;
     offset.second = -0.5 * (model->ymax() - model->ymin()) * (1.0 - factor) / factor;
@@ -1153,7 +1225,7 @@ void MainWindow::drawModelJ()
         Jij[i]=V_i;
 //	double IV_i = fabs(I_i * V_i);
         double q = V_i;
-        if (q > Vmax) Vmax = q; 
+        if (q > Vmax) Vmax = q;
         if (q < Vmin) Vmin = q;
     }
 //--------
@@ -1170,8 +1242,9 @@ void MainWindow::drawModelJ()
         QPair<double,double> xy0 = model->xy(ends.first);
         QPair<double,double> xy1 = model->xy(ends.second);
         q=Jij[e];
-        if(q>0.1*Vmax){
-        QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
+        if(q>0.5*Vmax)
+        {
+            QGraphicsLineItem *n = ifactory.newEdge( q , xy0, xy1 );
         }
     }
 
@@ -1192,17 +1265,17 @@ void MainWindow::drawModelR()
     double xscale = factor * scene->width()  / (model->xmax() - model->xmin());
     double yscale = factor * scene->height() / (model->ymax() - model->ymin());
     double scale = xscale < yscale ? xscale : yscale;
-    
+
     QPair<double,double> offset;
     offset.first = -0.5 * (model->xmax() - model->xmin()) * (1.0 - factor) / factor;
     offset.second = -0.5 * (model->ymax() - model->ymin()) * (1.0 - factor) / factor;
     double Smin = 1e300, Smax = -1e300;
     double q;
     for (int i = 0; i < model->nI(); ++i)
-    {   
+    {
         q = (model->Sigma[i]);
         if (fabs(q) > Smax&&q!=this->sigmaU) Smax = fabs(q);
-        if (fabs(q) < Smin&&(q>10*this->CUTOFF_SIGMA&&q!=this->sigmaU)) 
+        if (fabs(q) < Smin&&(q>10*this->CUTOFF_SIGMA&&q!=this->sigmaU))
         {
             Smin = fabs(q);
         }
@@ -1227,7 +1300,7 @@ void MainWindow::drawModelR()
 
 
 void MainWindow::computeModel()
-{  
+{
     int r_type = this->typeResistor->checkedId();
     this->selectSigma(r_type);
     model->compute();
@@ -1272,7 +1345,7 @@ void MainWindow::computeModel()
     qApp->processEvents();
 }
 void MainWindow::computeOneR()
-{  
+{
 //        model->conductivity=singleSigma(this->rand);
 //        model->conductivity=singleSigma(this->rand);
         model->conductivity=singleSigma(this->rand,this->Ex);
@@ -1302,24 +1375,24 @@ void MainWindow::computeCapacityU()
     int Jm;
     int iseed=this->seed;
     double yy;
-    int l=10;
+    int l=5;
 //    for (double x = this->Umin; x <= this->Umax; x += this->dU)
-        while (l< 155)
-    {      
-        this->cols=l;
+    while (l< 110)
+    {
+        this->cols=l+3;
         this->rows=l;
         double x=l;
- /*       this->U =x;
+/*       this->U =x;
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFUarray.size()) 
+            if(j<this->EFUarray.size())
             {
                 double EFTU=this->EFUarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -1329,39 +1402,33 @@ void MainWindow::computeCapacityU()
         }
         }
         if(this->flgStop) {this->flgStop=false; return;}
-        */
+*/
         double yy=0;
         int jj=0;
         yy=0;
-        Jm=5000;
-        if(l>40) Jm=1000;
- //       if(l>30) Jm=600;
-        if(l>50) Jm=300;
+        Jm=1000;
+        if(l>40) Jm=500;
+//       if(l>30) Jm=600;
+        if(l>60) Jm=300;
         if(l>100) Jm=10;
         while(jj<Jm){
         this->seed=iseed;
         iseed++;
         this->computeModel();
-        double y=model->capacity/this->rows;
+        double y=model->capacity;//(x*x);
         yy=yy+y;
         jj++;
         }
-        if(l>40) l=l+10;
+        if(l>50) l=l+10;
         else l=l+5;
-//        l=l+10; 
+//        l=l+10;
         data.push_back(x);
         data.push_back(yy/Jm);
-/*            if(model->conductivity<NCUT*this->CUTOFF_SIGMA) 
-            {
-                this->numOfCurve++;
-                break;
-            }
-            */
         this->plotterCU->setCurveData(this->numOfCurve,data);
         if(this->flgStop) {this->numOfCurve++; this->flgStop=false; return;}
     }
     this->numOfCurve++;
-    
+
 }
 void MainWindow::computeCapacityT()
 {
@@ -1375,18 +1442,18 @@ void MainWindow::computeCapacityT()
     double EF00=this->EF0;
     for (double x = this->Tmax; x >= this->Tmin; x -= this->dT)
 //    for (double x = this->Tmin; x <= this->Tmax; x += this->dT)
-    {   
+    {
         this->T =x;
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFTarray.size()) 
+            if(j<this->EFTarray.size())
             {
                 double EFTU=this->EFTarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("EFTarray at j=%i\n",j);
@@ -1400,7 +1467,7 @@ void MainWindow::computeCapacityT()
  //       this->setCapacity();
         data.push_back(x);
         data.push_back(model->capacity);
-            if(model->conductivity<NCUT*this->CUTOFF_SIGMA) 
+            if(model->conductivity<NCUT*this->CUTOFF_SIGMA)
             {
                 this->numOfCurve++;
                 break;
@@ -1415,21 +1482,39 @@ void MainWindow::computeRrc()
     winPlotT->show();
     winPlotT->raise();
     winPlotT->setActiveWindow();
-    double xmin, xmax, dx; 
-    xmin=0.3;//this->r0;
-    xmax=0.5;//this->r0+5./this->T;
+    int r_type = this->typeResistor->checkedId();
+    double xmin, xmax, dx;
+    xmin=0.35;//this->r0;
+    xmax=0.4999;//this->r0+5./this->T;
     if(xmax>1.) xmax=1.;
-    dx=(xmax-xmin)/100;
+    dx=(xmax-xmin)/101;
     std::vector<double> data;
-    double EF00=this->EF0;
-    this->EFT=EF00;
+    std::vector<double> data1;
+//    double EF00=this->EF0;
+//    this->EFT=EF00;
+    double y_old=0;
+        for (double x = xmin; x <= xmax; x += dx)
+    {
+        data1.push_back(fabs(x-0.5));
+        double y=pow(fabs(x-0.5),4./3.);
+        data1.push_back(y);
+        this->plotterT->setCurveData(this->numOfCurve,data1);
+    }
+    this->numOfCurve++;
+//return;
     for (double x = xmin; x <= xmax; x += dx)
     {
         this->r_c = x;
         if(this->flgStop) {this->flgStop=false; return;}
-        this->computeModel();
-        data.push_back(this->r_c);
-        data.push_back(model->conductivity);
+        this->selectSigma(r_type);
+//        this->computeModel();
+//        double y=model->conductivity;
+        double y=effective_medium(y_old);
+        y_old=y;
+        data.push_back(fabs(x-0.5));
+//        data.push_back(fabs(x-0.5));
+        data.push_back(y);
+//        data.push_back(model->conductivity);
         this->plotterT->setCurveData(this->numOfCurve,data);
     }
     this->numOfCurve++;
@@ -1443,7 +1528,7 @@ void MainWindow::computeRU1()
     int G_type = this->typeCond->currentIndex();
     double EF00=this->EF0;
 
-        if(G_type!=4) 
+        if(G_type!=4)
     {
         computeEFU();
 //        double EFTU=this->EFUarray[0];
@@ -1458,13 +1543,13 @@ void MainWindow::computeRU1()
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFUarray.size()) 
+            if(j<this->EFUarray.size())
             {
                 double EFTU=this->EFUarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -1481,7 +1566,7 @@ void MainWindow::computeRU1()
         data.push_back(y);
         this->plotterU->setCurveData(this->numOfCurve,data);
     }
-   
+
     this->numOfCurve++;
 }
 /*
@@ -1493,11 +1578,11 @@ void MainWindow::computeRU()
     int ni=model->nI();
     double Totsum=0;
         for (int i = 0; i < ni; ++i)
-    {   
+    {
         if (fabs(model->Sigma[i])!=this->sigmaU) Totsum=Totsum+1;
     }
     int G_type = this->typeCond->currentIndex();
-        if(G_type!=4) 
+        if(G_type!=4)
     {
         computeEFU();
         double EFTU=this->EFUarray[0];
@@ -1523,7 +1608,7 @@ void MainWindow::computeRU()
         double sum=0.;
         double sigma_m=singleSigma(this->rand)*this->portion;
     for (int i = 0; i < ni; ++i)
-    {   
+    {
         if (fabs(model->Sigma[i]) <=sigma_m) sum=sum+1;
     }
     sum=sum/Totsum;
@@ -1535,7 +1620,7 @@ void MainWindow::computeRU()
         data.push_back(y);
 
 //            data.push_back(x);
-//            if(model->conductivity<NCUT*CUTOFF_SIGMA) 
+//            if(model->conductivity<NCUT*CUTOFF_SIGMA)
 //            {
 //                this->numOfCurve++;
 //                break;
@@ -1557,11 +1642,11 @@ void MainWindow::computeRX()
     int ni=model->nI();
     double Totsum=0;
         for (int i = 0; i < ni; ++i)
-    {   
+    {
         if (fabs(model->Sigma[i])!=this->sigmaU) Totsum=Totsum+1;
     }
     int G_type = this->typeCond->currentIndex();
-        if(G_type!=4) 
+        if(G_type!=4)
     {
         computeEFU();
 //        double EFTU=this->EFUarray[0];
@@ -1571,8 +1656,8 @@ void MainWindow::computeRX()
     double EF00=this->EF0;
 //    randRcr();
 //    double sigma00=singleSigma(0.5);
-    for (double x = 0.4; x < 0.5; x += 0.005)
-    {   
+    for (double x = 0.1; x < 1; x += 0.05)
+    {
         data1.push_back(x);
         double y=pow(fabs(x-0.5),4./3.);
         data1.push_back(y);
@@ -1581,19 +1666,19 @@ void MainWindow::computeRX()
     this->numOfCurve++;
 //    for (double x = 0.4; x < 0.5; x += 0.005)
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
-    {   
+    {
 //        this->fraction =x;
         this->U =x;
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFUarray.size()) 
+            if(j<this->EFUarray.size())
             {
                 double EFTU=this->EFUarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -1608,7 +1693,7 @@ void MainWindow::computeRX()
         //        sigma_m=this->portion*singleSigma(this->randc);//0.01*sigma00*jj;
         this->computeModel();
     for (int i = 0; i < ni; ++i)
-    {   
+    {
         if (fabs(model->Sigma[i]) <sigma_m) sum=sum+1;
     }
     sum=sum/Totsum;
@@ -1637,7 +1722,7 @@ void MainWindow::computeRU()
     winPlotU->raise();
     winPlotU->setActiveWindow();
     int G_type = this->typeCond->currentIndex();
-        if(G_type!=4) 
+        if(G_type!=4)
     {
         computeEFU();
 //        double EFTU=this->EFUarray[0];
@@ -1646,19 +1731,19 @@ void MainWindow::computeRU()
     int j=0;
     double EF00=this->EF0;
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
-    {   
+    {
     this->U =x;
     if(this->flgStop) {this->flgStop=false; return;}
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFUarray.size()) 
+            if(j<this->EFUarray.size())
             {
                 double EFTU=this->EFUarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -1690,7 +1775,7 @@ void MainWindow::compute_nU()
     winPlotU->raise();
     winPlotU->setActiveWindow();
     int G_type = this->typeCond->currentIndex();
-        if(G_type!=4) 
+        if(G_type!=4)
     {
         computeEFU();
 //        double EFTU=this->EFUarray[0];
@@ -1699,19 +1784,19 @@ void MainWindow::compute_nU()
     int j=0;
     double EF00=this->EF0;
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
-    {   
+    {
     this->U =x;
     if(this->flgStop) {this->flgStop=false; return;}
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFUarray.size()) 
+            if(j<this->EFUarray.size())
             {
                 double EFTU=this->EFUarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -1739,20 +1824,20 @@ void MainWindow::computeVimax()
     double EF00=this->EF0;
     int j=0;
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
-    {   
+    {
     this->U =x;
           this->U.updateDisplay();
     if(this->flgStop) {this->flgStop=false; return;}
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFUarray.size()) 
+            if(j<this->EFUarray.size())
             {
                 double EFTU=this->EFUarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -1784,9 +1869,9 @@ void MainWindow::computeVimax()
 //        if(V_i<1e-20) V_i=1e-20;
         Vij[i]=V_i;
         double q = V_i;
-        if (q > Vmax) 
+        if (q > Vmax)
         {
-        Vmax = q; 
+        Vmax = q;
         imax=i;
         }
         if (q < Vmin) Vmin = q;
@@ -1812,7 +1897,7 @@ void MainWindow::computeReffU()
     winPlotU->setActiveWindow();
     int r_type = this->typeResistor->checkedId();
         int G_type = this->typeCond->currentIndex();
-        if(G_type!=4) 
+        if(G_type!=4)
     {
         computeEFU();
 //        double EFTU=this->EFUarray[0];
@@ -1822,20 +1907,20 @@ void MainWindow::computeReffU()
     double y_old=0;
     double EF00=this->EF0;
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
-    {   
+    {
     this->U =x;
           this->U.updateDisplay();
     if(this->flgStop) {this->flgStop=false; return;}
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFUarray.size()) 
+            if(j<this->EFUarray.size())
             {
                 double EFTU=this->EFUarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -1856,17 +1941,17 @@ void MainWindow::computeReffU()
                 this->numOfCurve++;
                 break;
             }
-        */            
+        */
     }
     this->numOfCurve++;
 }
 double MainWindow::average(double y)
-{       
+{
     double sum=0;
         for (int i = 0; i < model->nI(); ++i)
-      {   
+      {
         double sigma_ik=fabs(model->Sigma[i]);
-        if (sigma_ik!=this->sigmaU) 
+        if (sigma_ik!=this->sigmaU)
         {
             sum = sum+(sigma_ik-y)/(sigma_ik+fabs(y));
         }
@@ -1877,21 +1962,21 @@ double MainWindow::effective_medium(double y_old)
 {
 //    this->computeModel();
 //    double yd=model->conductivity;
-    double y0=y_old; 
+    double y0=y_old;
     double sum10=0;
     double sum11=1;
     double Totsum=0;
     double y1=0;
         for (int i = 0; i < model->nI(); ++i)
-      {   
+      {
         double sigma_ik=fabs(model->Sigma[i]);
-        if (sigma_ik!=this->sigmaU) 
+        if (sigma_ik!=this->sigmaU)
         {
             Totsum=Totsum+1;
             sum10 = sum10+(sigma_ik-y0)/(sigma_ik+fabs(y0));
         }
         }
-    if(y0==0) 
+    if(y0==0)
   {
     sum10=1;
     double dy=0.1;
@@ -1902,7 +1987,7 @@ double MainWindow::effective_medium(double y_old)
     sumold=sum11;
     sum11=average(y1)/Totsum;
     }
-    if(sumold!=1) 
+    if(sumold!=1)
     {
         sum10=sumold;
         y0=y1-dy;
@@ -1924,13 +2009,13 @@ double MainWindow::effective_medium(double y_old)
             y2=y1-sum11*(y1-y0)/(sum11-sum10);
             double sum12=average(y2)/Totsum;
             j++;
-            if(sum12>0&&sum11<0||sum12<0&& sum11>0) 
+            if(sum12>0&&sum11<0||sum12<0&& sum11>0)
             {
                 sum10=sum11;
                 y0=y1;
             }
 /*
-            else if(sum12<0.5&&sum10<0.5||sum12>0.5&& sum10>0.5) 
+            else if(sum12<0.5&&sum10<0.5||sum12>0.5&& sum10>0.5)
             {
               if(sum10>sum) y0=y0-dy;//0.5;
               else y0=y0+dy;//0.5;//(EFT0+this->EF)/2;
@@ -1950,13 +2035,13 @@ double MainWindow::effective_medium(void)
 {
     this->computeModel();
     double yd=model->conductivity;
-    double y0=0; 
+    double y0=0;
     double sum10=0;
     double Totsum=0;
         for (int i = 0; i < model->nI(); ++i)
-      {   
+      {
         double sigma_ik=fabs(model->Sigma[i]);
-        if (sigma_ik!=this->sigmaU) 
+        if (sigma_ik!=this->sigmaU)
         {
             Totsum=Totsum+1;
 //            sum10 = sum10+sigma_ik/(sigma_ik+fabs(y0));
@@ -1973,7 +2058,7 @@ double MainWindow::effective_medium(void)
     sumold=sum11;
     sum11=average(y1)/Totsum;
     }
-    if(sumold!=1) 
+    if(sumold!=1)
     {
         sum10=sumold;
         y0=y1-dy;
@@ -1985,14 +2070,14 @@ double MainWindow::effective_medium(void)
             y2=y1-(sum11-0.5)*(y1-y0)/(sum11-sum10);
             double sum12=average(y2)/Totsum;
             j++;
-            if(sum12>0.5&&sum11<0.5||sum12<0.5&& sum11>0.5) 
+            if(sum12>0.5&&sum11<0.5||sum12<0.5&& sum11>0.5)
             {
                 sum10=sum11;
                 y0=y1;
             }
               sum11=sum12;
               y1=y2;
-            
+
         }
 
 return y1;
@@ -2005,31 +2090,31 @@ void MainWindow::compute_deviation()
     double sum1=0.;
     double Smax = -1e300;
     int G_type = this->typeCond->currentIndex();
-        if(G_type!=4) 
+        if(G_type!=4)
     {
         computeEF_TU();
     }
     int r_type = this->typeResistor->checkedId();
     this->selectSigma(r_type);
      for (int i = 0; i < model->nI(); ++i)
-    {   
+    {
         q = (model->Sigma[i]);
-        if (q!=this->sigmaU) 
+        if (q!=this->sigmaU)
         {
             isum=isum+1;
             sum1=sum1+q;
-        if (fabs(q) > Smax) Smax = fabs(q); 
+        if (fabs(q) > Smax) Smax = fabs(q);
         }
      }
     double sigma_av=sum1/isum;
     double d = -1e300;
      for (int i = 0; i < model->nI(); ++i)
-    {   
+    {
         q = (model->Sigma[i]);
-        if (q!=this->sigmaU) 
+        if (q!=this->sigmaU)
         {
         q= (q-sigma_av)/sigma_av;
-        if (fabs(q) > d) d = fabs(q); 
+        if (fabs(q) > d) d = fabs(q);
         }
      }
      this->deviation=d;
@@ -2070,9 +2155,9 @@ void MainWindow::compute_deviation()
            double cond=model->conductivity;
            if(cond>1e-12)
            {
-               this->Anything[j]=cond;
+               this->CondDist[j]=cond;
                jj=jj+1;
-           
+
            for (int i = 0; i < ni; ++i)
         {
             double dV=fabs(model->difV[i]);
@@ -2080,7 +2165,7 @@ void MainWindow::compute_deviation()
           double sig=model->Sigma[idx[i]];
           if(sig<this->sigmaU){
              ei=int((Ii-Imin)/dpI);
-              if(dV>dVmin) 
+              if(dV>dVmin)
         {
             ev=int((dV-dVmin)/dpdV);
         if (e < 0 || e > ndV-1)
@@ -2092,7 +2177,7 @@ void MainWindow::compute_deviation()
                 QMessageBox::Ok,QMessageBox::Ok);
             break;
         }
-                pdV[e]=pdV[e]+1; 
+                pdV[e]=pdV[e]+1;
         }
           }
         }
@@ -2100,11 +2185,11 @@ void MainWindow::compute_deviation()
 //         idx = model->index_for_sorted_difV();
         }
          }
-    
+
         double sumP=0.;
         double ln10=log(10.);
         for (int i = 0; i < nS; ++i)
-        {  
+        {
           double xi=dVmin+i*dS+0.5*dS;
           sumP=sumP+pS[i];
 //          sumP=sumP+pS[i]*exp(xi*ln10);
@@ -2112,7 +2197,7 @@ void MainWindow::compute_deviation()
         sumP=sumP*dS;
 //        double sum=0;
         for (int i = 0; i < nS; ++i)
-        {   
+        {
             double x=dVmin+i*dS+0.5*dS;
             double p=pS[i];
 //            double p=pS[i]*exp(x*ln10);
@@ -2224,18 +2309,18 @@ void MainWindow::compute_p_small_V()
     int iy2=(this->rows-1)/2+15;
     int j=0;
         for (int i = 0; i < model->nW(); ++i)
-        { 
+        {
             QPair<double,double> xy = model->xy(idx[i]+model->nV());
         if (xy.first!=0 && xy.first!=1
-            &&xy.first!=model->xmax() 
+            &&xy.first!=model->xmax()
             &&xy.first!=model->xmax()-1)
         {
             if((xy.first>=ix1&&xy.first<=ix2)&&
                 (xy.second>=iy1&&xy.second<=iy2))
             {
                 j=j+1;
-            double x1=j;  
-            double x=x1;//model->nW();   
+            double x1=j;
+            double x=x1;//model->nW();
             data.push_back(x);
             data.push_back(model->W[idx[i]]);//deltaV);
             }}
@@ -2257,12 +2342,12 @@ void MainWindow::compute_pV()
         for (int i = 0; i < model->nW(); ++i)
         { QPair<double,double> xy = model->xy(idx[i]+model->nV());
         if (xy.first!=0 && xy.first!=1
-            &&xy.first!=model->xmax() 
+            &&xy.first!=model->xmax()
             &&xy.first!=model->xmax()-1)
         {
-            double x1=i+1;  
-            double x=x1/model->nW();   
-//            double x=x1/model->nW();   
+            double x1=i+1;
+            double x=x1/model->nW();
+//            double x=x1/model->nW();
             data.push_back(x);
             data.push_back(model->W[idx[i]]);//deltaV);
         }
@@ -2274,14 +2359,14 @@ void MainWindow::compute_pV()
     pS.fill(0.0);
     double dS=fabs(2./(nS-1));
     int e;
-    int isum=0;   
+    int isum=0;
     for (int i = 0; i < model->nV(); ++i)
-    {   
+    {
 
         double q = model->V[i];
         QPair<double,double> xy = model->xy(i);
         if (xy.first!=0 && xy.first!=1
-            &&xy.first!=model->xmax() 
+            &&xy.first!=model->xmax()
             &&xy.first!=model->xmax()-1)
         {
 
@@ -2296,18 +2381,18 @@ void MainWindow::compute_pV()
             }
             pS[e]=pS[e]+1;
             isum=isum+1;
-        } 
+        }
     }
     int ii=isum;
     int v = model->nV();
 
 
     for (int i = 0; i < model->nW(); ++i)
-    {   
+    {
         double q = model->W[i];
         QPair<double,double> xy = model->xy(i+v);
         if (xy.first!=0 && xy.first!=1
-            &&xy.first!=model->xmax() 
+            &&xy.first!=model->xmax()
             &&xy.first!=model->xmax()-1)
         {
 
@@ -2325,12 +2410,12 @@ void MainWindow::compute_pV()
             isum=isum+1;
         }
     }
-    ii=isum; 
+    ii=isum;
     double sum=0.;
     data.push_back(-1.);
     data.push_back(0.);
     for (int i = 0; i < nS; ++i)
-    {   
+    {
         //            double x=-1+i*dS;
         double x=-1+i*dS+0.5*dS;
         data.push_back(x);
@@ -2383,7 +2468,7 @@ int lmax=30;
 //            data.push_back(j);
 //            data.push_back(y);
             }
-        
+
          if(l==(lmax-1))
             {
             data.push_back(j+1);
@@ -2404,15 +2489,15 @@ int lmax=30;
 //Difference Voltage Distribution
 void MainWindow::compute_pdV()
 {
-    this->computeModel();
-    int ni= model->nI();
+//    this->computeModel();
+//    int ni= model->nI();
 //1. range dVmin, dVmax for distribution of voltage difference
-    QVector<int> idV = model->index_for_sorted_difV();
-    double v=fabs(model->difV[idV[ni-1]]);
+//    QVector<int> idV = model->index_for_sorted_difV();
+//    double v=fabs(model->difV[idV[ni-1]]);
     double dVmin;
     double dVmax=log(2.);
 //    double dVmax=log10(2.);
-    if(v>0&&v>this->CUTOFF_SIGMA) 
+/*    if(v>0&&v>this->CUTOFF_SIGMA)
     {
         dVmin=log(v);
 //        dVmin=log10(v);
@@ -2420,80 +2505,99 @@ void MainWindow::compute_pdV()
         dVmin=dVmin-2.3*delta1;
     }
     else dVmin=log(this->CUTOFF_SIGMA);
-    dVmin=log(1.e-17);
+    */
+    dVmin=log(1.e-20);
     int npV=201;
-    Q3MemArray<double> pdV( npV+2 );
-    pdV.fill(0.0);
+    std::vector<double>pdV;
+    pdV.resize(npV+2,0.0);
+//    Q3MemArray<double> pdV( npV+2 );
+//    pdV.fill(0.0);
     double dV=(dVmax-dVmin)/(npV+1);
 //2. range imin, imax for current distribution
-    QVector<int> idI = model->index_for_sorted_I();
+/*    QVector<int> idI = model->index_for_sorted_I();
     double imin=fabs(model->I[idI[ni-1]]);
     double imax=fabs(model->I[idI[0]]);
     imax=log(imax);
 //    imax=log10(imax);
-    if(imin>0&&imin>this->CUTOFF_SIGMA) 
+    if(imin>0&&imin>this->CUTOFF_SIGMA)
     {
         imin=log(imin);
 //        imin=log10(imin);
         double delta2=(imax-imin)/5;
         imax=imax+6*delta2;
         imin=imin-4*delta2;
-    } 
+    }
     else imin=log(this->CUTOFF_SIGMA);
-    imin=log(1.e-22);
-    imax=-1.;
+    */
+    double imin=log(1.e-25);
+    double imax=-1.;
     //    if(imin<this->CUTOFF_SIGMA) imin=log10(this->CUTOFF_SIGMA);
     int npI=201;
     Q3MemArray<double> pI( npI+3 );
     pI.fill(0.0);
     double dI=(imax-imin)/(npI+1);
 //3. range Jmin, Jmax for distribution of Joule heat
-    QVector<int> idJ = model->index_for_sorted_IdifV();
+/*    QVector<int> idJ = model->index_for_sorted_IdifV();
     double Jmin=fabs(model->IdifV[idJ[ni-1]]);
     double Jmax=fabs(model->IdifV[idJ[0]]);
     Jmax=log(Jmax);
 //    Jmax=log10(Jmax);
-    if(Jmin>0&&Jmin>this->CUTOFF_SIGMA) 
+    if(Jmin>0&&Jmin>this->CUTOFF_SIGMA)
     {
         Jmin=log(Jmin);
 //        Jmin=log10(Jmin);
         double delta2=(Jmax-Jmin)/5;
         Jmin=Jmin-4*delta2;
 //        Jmax=Jmax+2.3*delta2;
-    } 
+    }
     else Jmin=log(this->CUTOFF_SIGMA);
     Jmin=imin;
 //    if(Jmin<this->CUTOFF_SIGMA) Jmin=log10(this->CUTOFF_SIGMA);
+*/
     int npJ=201;
     Q3MemArray<double> pJ( npJ+3 );
     pJ.fill(0.0);
+    double Jmin=log(1.e-25);
+    double Jmax=-1.;
     double dJ=(Jmax-Jmin)/(npJ+1);
-    this->Anything.resize(nJ,0.0);
+    this->CondDist.resize(nJ,0.0);
+    this->NumJDist.resize(nJ,0.0);
     int e;
        int iseed=this->seed;
        int j=0;
-       double sumI=0;  
-       while (j<nJ)
-       {   
+       double sumI=0;
+//       std::vector<double> numJmax;
+       double y_old=0;
+       double sigma_mid=0;
+    for (int j = 0; j < nJ; ++j)
+    {
+      int ni;
+      double yy, yn;
+      for (;;) // in fact we have only 10 seeds to try in the worst case
+	{
            this->seed=iseed;
+           this->computeModel();
            iseed++;
-           double yy=model->conductivity;
-           if(yy>0){
-        this->Anything[j]=yy;
-        j=j+1;
+           ni= model->nI();
+           yy=model->conductivity;
+           yn=model->capacity;
+           if (yy > Cond_min) break;
+	}
+        this->CondDist[j]=yy;
+        double yeff=effective_medium(y_old);
+        y_old=yeff;
+        this->NumJDist[j]=yeff;//yn;
+        sigma_mid=sigma_mid+yeff;
         for (int i = 0; i < ni; ++i)
         {
-//            double Vi=log10(fabs(model->difV[i]));
-//            double Ji=log10(fabs(model->IdifV[i]));
-//            double Ii=log10(fabs(model->I[i]));
             double Vi=log(fabs(model->difV[i]));
             double Ji=log(fabs(model->IdifV[i]));
             double Ii=log(fabs(model->I[i]));
           if(model->Sigma[i]<this->sigmaU)
           {
-           sumI=sumI+1; 
-//current distribution          
-          if(Ii<imin) 
+           sumI=sumI+1;
+//current distribution
+          if(Ii<imin)
           {
               pI[0]=pI[0]+1;
           }
@@ -2504,8 +2608,8 @@ void MainWindow::compute_pdV()
           if(e==(npI+2)) pI[e-1]=pI[e-1]+1;
           if(e<(npI+2)) pI[e]=pI[e]+1;
           }
-//Joule heat distribution          
-          if(Ji<Jmin) 
+//Joule heat distribution
+          if(Ji<Jmin)
           {
               pJ[0]=pJ[0]+1;
           }
@@ -2516,8 +2620,8 @@ void MainWindow::compute_pdV()
           if(e==(npJ+2)) pJ[e-1]=pJ[e-1]+1;
           if(e<(npJ+2)) pJ[e]=pJ[e]+1;
           }
-//voltage dufference distribution          
-          if(Vi<dVmin) 
+//voltage dufference distribution
+          if(Vi<dVmin)
           {
               pdV[0]=pdV[0]+1;
           }
@@ -2528,23 +2632,21 @@ void MainWindow::compute_pdV()
           if(e<(npV+2)) pdV[e]=pdV[e]+1;
           }
           }
+          }
         }
-           }
-           this->computeModel();
-        }
-//voltage difference 
+//voltage difference
     winPlotV->show();
     winPlotV->raise();
     winPlotV->setActiveWindow();
     std::vector<double> dataV;
 //    double x0=double(this->cols)/pow(double(this->kappa),4./3.);
-    double x0=double(this->cols);
+    double x0=double(this->cols-3);
     x0=log(x0);
 //    x0=log10(x0);
     double sumV=0.;
         double ln10=log(10.);
         for (int i = 0; i < npV+2; ++i)
-        {  
+        {
           double xi=dVmin+i*dV-0.5*dV;
           sumV=sumV+pdV[i]*dV;
         }
@@ -2554,7 +2656,7 @@ void MainWindow::compute_pdV()
 //        if(pdV[0]>0) dataV.push_back(log10(pdV[0]/sumV/ln10)/x0);
         else     dataV.push_back(log(this->CUTOFF_SIGMA));
         for (int i = 1; i < npV+2; ++i)
-        {   
+        {
             double x=dVmin+i*dV-0.5*dV;
             double p=pdV[i];
                 dataV.push_back(x/x0);
@@ -2571,16 +2673,16 @@ void MainWindow::compute_pdV()
     std::vector<double> dataI;
         double sumCur=0.;
         for (int i = 0; i < npV+2; ++i)
-        {  
+        {
           sumCur=sumCur+pI[i]*dI;
         }
          sumCur=nJ*dI;
                 dataI.push_back(imin/x0);
          if(pI[0]>0) dataI.push_back(log(pI[0]/sumCur)/x0);
 //         if(pI[0]>0) dataI.push_back(log10(pI[0]/sumCur/ln10)/x0);
-         else dataI.push_back(this->CUTOFF_SIGMA);
+         else dataI.push_back(log(this->CUTOFF_SIGMA));
         for (int i = 1; i < npI+2; ++i)
-        {   
+        {
             double x=imin+i*dI-0.5*dI;
             double p=pI[i];
             dataI.push_back(x/x0);
@@ -2602,70 +2704,92 @@ void MainWindow::compute_pdV()
     double x1=this->kappa;
         double sumJ=0.;
         for (int i = 0; i < npV+3; ++i)
-        {  
+        {
           sumJ=sumJ+pJ[i]*dJ;
         }
         sumJ=nJ*dJ;
+//        dataJ.push_back(Jmin);
         dataJ.push_back(Jmin/x0);
-//        dataJ.push_back((Jmin+2*x0)/x1);
     if(pJ[0]>0){
         double yn=log(pJ[0]/sumJ)/x0;
-//        double yn=log10(pJ[0]/sumJ/ln10)/x0;
         dataJ.push_back(yn);
     }
          else dataJ.push_back(log(this->CUTOFF_SIGMA));
         for (int i = 1; i < npJ+2; ++i)
-        {   
+        {
             double x=Jmin+i*dJ-0.5*dJ;
             double p=pJ[i];
             double yn=log(p/sumJ)/x0;
-//            double yn=log10(p/sumJ/ln10)/x0;
+//            dataJ.push_back(x);
             dataJ.push_back(x/x0);
-//            dataJ.push_back((x+2*x0)/x1);
             if(p>0) dataJ.push_back(yn);
          else dataJ.push_back(log(this->CUTOFF_SIGMA));
         }
+//         dataJ.push_back(Jmax);
          dataJ.push_back(Jmax/x0);
-//         dataJ.push_back((Jmax+2*x0)/x1);
          if(pJ[npJ+2]>0) dataJ.push_back(log(pJ[npJ+2]/sumJ)/x0);
-//         if(pJ[npJ+2]>0) dataJ.push_back(log10(pJ[npJ+2]/sumJ/ln10)/x0);
          else dataJ.push_back(log(this->CUTOFF_SIGMA));
          this->plotterJ->setCurveData(this->numOfCurveJ,dataJ);
          this->numOfCurveJ++;
-//---------conductance 
-    this->Anything.resize(nJ,0.0);
-    QVector<int> idxS = this->index_for_sorted_Anything();
+//---------conductance
+//    this->CondDist.resize(nJ,0.0);
+    std::vector<int> idxS = this->index_for_sorted_CondDist();
+{
+  int k;
+  FILE *f = fopen("cd1.txt","wt");
+  for (k=0; k<CondDist.size(); ++k)
+    fprintf(f,"CondDist[%i]=%lg\n",k,CondDist[k]);
+  for (k=0; k<idxS.size(); ++k)
+    fprintf(f,"sorted.CondDist[%i]=%lg\n",idxS[k],CondDist[idxS[k]]);
+  fclose(f);
+}
+
+    std::vector<int> idxNumJ = this->index_for_sorted_NumJDist();
     int nS1=51;
+    int numJ=51;
+    sigma_mid=sigma_mid/nJ;
     Q3MemArray<double> pS1( nS1+1 );// from 0-box to Ns-box
+    Q3MemArray<double> pNumJ( numJ+1 );// from 0-box to Ns-box
     pS1.fill(0.0);
+    pNumJ.fill(0.0);
     int jmin=idxS[0];
     int jmax=idxS[nJ-1];
-    double Smin1=Anything[jmin];
-    double Smax1=Anything[jmax];
+    int jminJ=idxNumJ[0];
+    int jmaxJ=idxNumJ[nJ-1];
+    double Smin1=CondDist[jmin];
+    double Smax1=CondDist[jmax];
     if( Smin1>0) Smin1=log(Smin1);
 //    if( Smin1>0) Smin1=log10(Smin1);
     else Smin1=-15*2.3;
-//     Smin=log10(CUTOFF_SIGMA);//log10(Anything[jmin]);
      Smax1=log(Smax1);
 //     Smax1=log10(Smax1);
     double dS1=(Smax1-Smin1)/(nS1+1);
+    double NumJmin=NumJDist[jminJ];
+    double NumJmax=NumJDist[jmaxJ];
+    if(NumJmin>0) NumJmin=log(NumJmin);
+    else NumJmin=-15*2.3;
+    NumJmax=log(NumJmax);
+    double dnumJ=(NumJmax-NumJmin)/(numJ+1);
     for (int i = 0; i < nJ; ++i)
-        {   
-          double y=log(Anything[idxS[i]]);
-//          double y=log10(Anything[idxS[i]]);
+        {
+          double y=log(CondDist[idxS[i]]);
+          double yn=log(NumJDist[idxNumJ[i]]);
+//          double yn=NumJDist[idxNumJ[i]];
           e=int((y-Smin1)/dS1);
+          int e1=int((yn-NumJmin)/dnumJ);
           if(e==(nS1+1)) pS1[e-1]=pS1[e-1]+1;
           else pS1[e]=pS1[e]+1;
+          if(e1==(numJ+1)) pNumJ[e1-1]=pNumJ[e1-1]+1;
+          else pNumJ[e1]=pNumJ[e1]+1;
         }
         ln10=log(10.);
-    double sumP=nJ*dS1;  
+    double sumP=nJ*dS1;
     winPlotG->show();
     winPlotG->raise();
     winPlotG->setActiveWindow();
     std::vector<double> data1;
-
         for (int i = 0; i < (nS1+1); ++i)
-        {   
+        {
             double x=Smin1+i*dS1+0.5*dS1;
             double p=pS1[i]*exp(x);
 //            double p=pS1[i]*exp(x*ln10);
@@ -2676,6 +2800,42 @@ void MainWindow::compute_pdV()
         }
     this->plotterG->setCurveData(this->numOfCurveSig,data1);
     this->numOfCurveSig++;
+    std::vector<double> data0;
+    data0.push_back(log(sigma_mid)/x0);
+    data0.push_back(-1);
+    data0.push_back(log(sigma_mid)/x0);
+    data0.push_back(-10);
+    this->plotterG->setCurveData(this->numOfCurveSig,data0);
+    this->numOfCurveSig++;
+/*    std::vector<double> datat;
+    datat.push_back(-0.5*this->kappa/x0);
+    datat.push_back(-1);
+    datat.push_back(-0.5*this->kappa/x0);
+    datat.push_back(-10);
+    this->plotterG->setCurveData(this->numOfCurveSig,datat);
+    this->numOfCurveSig++;*/
+    double x2=this->cols-3;
+    x2=x2*x2;
+    double sumpJ=nJ*dnumJ;
+    winPlotCU->show();
+    winPlotCU->raise();
+    winPlotCU->setActiveWindow();
+    std::vector<double> data;
+        for (int i = 0; i < (numJ+1); ++i)
+        {
+            double x=NumJmin+(i+0.5)*dnumJ;
+            double p=pNumJ[i]*exp(x);
+            data.push_back(x/x0);
+            if(p>0) data.push_back(log(p/sumpJ)/x0);
+//            if(p>0) data.push_back(p/sumpJ);
+//            else data.push_back(this->CUTOFF_SIGMA);
+            else data.push_back(log(this->CUTOFF_SIGMA));
+        }
+    this->plotterG->setCurveData(this->numOfCurveSig,data);
+    this->numOfCurveSig++;
+//    this->plotterCU->setCurveData(this->numOfCurve,data1);
+//    this->numOfCurve++;
+
 }
     //--------------------------
 /*        int ix=1;
@@ -2699,7 +2859,7 @@ void MainWindow::compute_pdV()
             data.push_back(Vij[i]);
 //          data.push_back((Vij[i]*0.5*(this->cols-4))/jmax);
             }
-//          } 
+//          }
           }
         this ->plotterV->setCurveData(this->numOfCurve,data);
 */
@@ -2726,10 +2886,10 @@ void MainWindow::compute_pdV()
         V_i=fabs(V_i);
 //        V_i=log10(fabs(V_i));
         Vij[i]=V_i;
-        
+
 //	double IV_i = fabs(I_i * V_i);
         double q = V_i;
-        if (q > Vmax) Vmax = q; 
+        if (q > Vmax) Vmax = q;
         if (q < Vmin) Vmin = q;
         }
     }
@@ -2749,12 +2909,12 @@ void MainWindow::compute_pdV()
 //    Vmin=-20.;
     double dS=(Vmax-Vmin)/(nS-1);
     int e;
-    int isum=0;   
+    int isum=0;
     for (int i = 0; i < nI; ++i)
-        {   
+        {
         if(fabs(model->Sigma[i])!=this->sigmaU)
         {
-           
+
             q = Vij[i];
 
                 e=int((q-Vmin)/dS);
@@ -2775,7 +2935,7 @@ void MainWindow::compute_pdV()
         double sum=0.;
 //        int isum=model->nI();
         for (int i = 0; i < nS; ++i)
-        {   
+        {
             double x=Vmin+i*dS+0.5*dS;
             data.push_back(x);
             double p=pS[i];//isum;
@@ -2786,7 +2946,7 @@ void MainWindow::compute_pdV()
         }
 */
 //        this->numOfCurve++;
-        
+
 //}
 //Current Distribution
 void MainWindow::compute_pCurrent()
@@ -2800,8 +2960,8 @@ void MainWindow::compute_pCurrent()
         {
             double sig=model->Sigma[idx[i]];
           if(sig<this->sigmaU){
-            double x1=i+1;  
-            double x=x1/model->nI();   
+            double x1=i+1;
+            double x=x1/model->nI();
             data.push_back(x);
             data.push_back(fabs(model->I[idx[i]]));
       }
@@ -2813,9 +2973,9 @@ void MainWindow::compute_pCurrent()
         {
         V_i=fabs(model->I[i]);
         Vij[i]=V_i;
-        
+
         double q = V_i;
-        if (q > Vmax) Vmax = q; 
+        if (q > Vmax) Vmax = q;
         if (q < Vmin) Vmin = q;
         }
         }
@@ -2826,12 +2986,12 @@ void MainWindow::compute_pCurrent()
     pS.fill(0.0);
     double dS=(Vmax-Vmin)/(nS-1);
     int e;
-    int isum=0;   
+    int isum=0;
     for (int i = 0; i < nI; ++i)
-        {   
+        {
         if(fabs(model->Sigma[i])!=this->sigmaU)
         {
-           
+
             q = Vij[i];
 
                 e=int((q-Vmin)/dS);
@@ -2852,7 +3012,7 @@ void MainWindow::compute_pCurrent()
         double sum=0.;
 //        int isum=model->nI();
         for (int i = 0; i < nS; ++i)
-        {   
+        {
             double x=(Vmin+i*dS+0.5*dS);///Vmax;
 //            if(x>0.1*Vmax) {
             data.push_back(x);
@@ -2867,9 +3027,9 @@ void MainWindow::compute_pCurrent()
     this->numOfCurve++;
 }
 
-QVector<int> MainWindow::index_for_sorted_Anything() const
+std::vector<int> MainWindow::index_for_sorted_CondDist() const
 {
-    QVector<int> res(nJ);
+    std::vector<int> res(nJ);
     for (int i=0; i<res.size(); ++i)
     {
         res[i] = i;
@@ -2878,11 +3038,30 @@ QVector<int> MainWindow::index_for_sorted_Anything() const
     struct MyLessThan
     {
         const     std::vector<double>& w;
-        MyLessThan(const  std::vector<double>& w_) : w(w_) {} 
+        MyLessThan(const  std::vector<double>& w_) : w(w_) {}
         bool operator()(int a, int b) const { return w[a] < w[b]; }
     };
 
-    qSort(res.begin(),res.end(),MyLessThan(Anything));
+    qSort(res.begin(),res.end(),MyLessThan(CondDist));
+
+    return res;
+}
+std::vector<int> MainWindow::index_for_sorted_NumJDist() const
+{
+    std::vector<int> res(nJ);
+    for (int i=0; i<res.size(); ++i)
+    {
+        res[i] = i;
+    }
+
+    struct MyLessThan
+    {
+        const     std::vector<double>& w;
+        MyLessThan(const  std::vector<double>& w_) : w(w_) {}
+        bool operator()(int a, int b) const { return w[a] < w[b]; }
+    };
+
+    qSort(res.begin(),res.end(),MyLessThan(NumJDist));
 
     return res;
 }
@@ -2894,9 +3073,10 @@ void MainWindow::compute_pSigma()
     winPlotG->setActiveWindow();
        std::vector<double> data;
        std::vector<double> data1;
-//         int r_type = this->typeResistor->checkedId();
-//         this->selectSigma(r_type);
+         int r_type = this->typeResistor->checkedId();//?
+         this->selectSigma(r_type);//?
          QVector<int> idx = model->index_for_sorted_Sigma();
+         this->computeModel();
          double cond=model->conductivity;
          double x,xcr;
          int nx=model->nI()-6*this->rows+4;
@@ -2904,15 +3084,15 @@ void MainWindow::compute_pSigma()
        for (int i = 0; i < model->nI(); ++i)
         {
             if(model->Sigma[idx[i]]<this->sigmaU){
-//            double x1=i+1;  
-//            x=x1/model->nI();   
+//            double x1=i+1;
+//            x=x1/model->nI();
             if(model->Sigma[idx[i]]>cond) xcr=i-6*this->rows+4;
-            double x1=i-6*this->rows+4;  
-            x=x1/nx;   
+            double x1=i-6*this->rows+4;
+            x=x1/nx;
             data.push_back(x);
             data.push_back(model->Sigma[idx[i]]);
             }
-        
+
         }
       this ->plotterG->setCurveData(this->numOfCurve,data);
       this->numOfCurve++;
@@ -2920,10 +3100,10 @@ void MainWindow::compute_pSigma()
            data1.push_back(cond);
            data1.push_back(xcr/nx);
            data1.push_back(5*cond);
-           
+
       this ->plotterG->setCurveData(this->numOfCurve,data1);
       this->numOfCurve++;
-      
+
 }
     void MainWindow::compute_SumpSigma()
 {
@@ -2932,7 +3112,7 @@ void MainWindow::compute_pSigma()
     winPlotU->setActiveWindow();
     std::vector<double> data;
     int G_type = this->typeCond->currentIndex();
-    if(G_type!=4) 
+    if(G_type!=4)
     {
         computeEF_TU();
     }
@@ -2944,10 +3124,10 @@ void MainWindow::compute_pSigma()
     double q;
     int isum=0;
      for (int i = 0; i < model->nI(); ++i)
-    {   
+    {
         q = (model->Sigma[i]);
         if (q!=this->sigmaU) isum=isum+1;
-        if (fabs(q) > Smax&&q!=this->sigmaU) Smax = fabs(q); 
+        if (fabs(q) > Smax&&q!=this->sigmaU) Smax = fabs(q);
         if (fabs(q) < Smin) Smin = fabs(q);
     }
     int nS=1001;
@@ -2958,11 +3138,11 @@ void MainWindow::compute_pSigma()
     int e;
     int ni=model->nI();
         for (int i = 0; i < model->nI(); ++i)
-        {   
-            
+        {
+
             q = (model->Sigma[i]);
-            if(q!=this->sigmaU) 
-//            if(q!=this->sigmaU&&q>CUTOFF_SIGMA) 
+            if(q!=this->sigmaU)
+//            if(q!=this->sigmaU&&q>CUTOFF_SIGMA)
             {
                 e=int((q-Smin)/dS);
         if (e < 0 || e > nS-1)
@@ -2973,12 +3153,12 @@ void MainWindow::compute_pSigma()
                 QMessageBox::Ok,QMessageBox::Ok);
             break;
         }
-                pS[e]=pS[e]+1; 
+                pS[e]=pS[e]+1;
             }
         }
         double sum=0.;
         for (int i = 0; i < nS; ++i)
-        {   
+        {
             double x=Smin+i*dS+0.5*dS;
             data.push_back(x);
             double p=pS[i]/isum;
@@ -2997,24 +3177,24 @@ void MainWindow::stopCalc()
 }
 
 double MainWindow::AreaE(double E)
-{   
+{
     double Uxy,x1,x2, y1, y2, r1, r2, r3, r4;
     double Area=0;
     for (double x =0.5; x <= 499.5; x += 1)
     {
         for (double y =0.5; y <= 499.5; y += 1)
-        {   
-            if((x-500)*(x-500)+(y-500)*(y-500)>=122500) 
+        {
+            if((x-500)*(x-500)+(y-500)*(y-500)>=122500)
             {
             x1=500+x;
             x2=500-x;
             y1=500+y;
             y2=500-y;
             r1=sqrt(x1*x1+y2*y2)-350;
-            r2=sqrt(x2*x2+y2*y2)-350;    
-            r3=sqrt(x1*x1+y1*y1)-350;   
+            r2=sqrt(x2*x2+y2*y2)-350;
+            r3=sqrt(x1*x1+y1*y1)-350;
             r4=sqrt(x2*x2+y1*y1)-350;
-            if(r1>0&&r2>0&&r3>0&&r4>0) 
+            if(r1>0&&r2>0&&r3>0&&r4>0)
             {
             r1=r1/this->Delta_r;
             r2=r2/this->Delta_r;
@@ -3029,7 +3209,7 @@ double MainWindow::AreaE(double E)
     return Area;
 }
 void MainWindow::computeEF_TU()
-{   
+{
     double E,EFT0,EFT1,EFT2 ;
     double dE=0.1;
     double sum, sum1, Area, sum10, sum11, sum12;
@@ -3043,15 +3223,15 @@ void MainWindow::computeEF_TU()
     aa=aa*aa;
     aa=4*this->U/(1+aa);
 //    aa=0;
-    if(this->T==0) 
-    {   
+    if(this->T==0)
+    {
         EFT1=aa+EF00+Vdot()-Vd0+this->Cg0*(Ucur-Vg0);//!!!!!!!!!!
     }
     else
-    {    
+    {
         //T!=0
     double Vd=Vdot();
-    this->EF=aa+EF00+Vd-Vd0+this->Cg0*(Ucur-Vg0); 
+    this->EF=aa+EF00+Vd-Vd0+this->Cg0*(Ucur-Vg0);
     int NE=(this->EF+40*this->T-Vd)/dE;
     this->AreaEf.resize(NE,0.0);
     sum=0;
@@ -3062,9 +3242,9 @@ void MainWindow::computeEF_TU()
         Area=AreaE(E)/10000;
         this->AreaEf[i]=Area;
         if(E<=this->EF) sum=sum+Area;
-    }  
+    }
         this->density=sum;
-    if(sum==0) 
+    if(sum==0)
     {
             QString s;
             s.sprintf("dot is empty at  U=%lg\n",this->U);
@@ -3090,12 +3270,12 @@ void MainWindow::computeEF_TU()
             EFT2=EFT1-(sum11-sum)*(EFT1-EFT0)/(sum11-sum10);
             sum12=computeSum(NE, dE, Vd, EFT2);
             j++;
-            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum) 
+            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum)
             {
                 sum10=sum11;
                 EFT0=EFT1;
             }
-/*            else if(sum12<sum&&sum10<sum||sum12>sum&& sum10>sum) 
+/*            else if(sum12<sum&&sum10<sum||sum12>sum&& sum10>sum)
             {
               if(sum10>sum) EFT0=EFT0-1;//0.5;
               else EFT0=EFT0+1;//0.5;//(EFT0+this->EF)/2;
@@ -3113,7 +3293,7 @@ void MainWindow::computeEF_TU()
 
 
 void MainWindow::computeEFU()
-{   
+{
     double E,EFT0,EFT1,EFT2 ;
     double dE=0.1;
     double sum, sum1, Area, sum10, sum11, sum12;
@@ -3127,26 +3307,26 @@ void MainWindow::computeEFU()
     aa1=4/(1+aa1);
     double EF00=this->EF0;
     if(this->T==0) {
-    int j=0;  
+    int j=0;
     for(double x=this->Umin; x<=this->Umax; x+=this->dU)
     {   this->U=x;
-        double aa=aa1*this->U; 
+        double aa=aa1*this->U;
 //        aa=0;
         EFT1=aa+EF00+Vdot()-Vd0+this->Cg0*(this->U-Vg0);
-            if(j<this->EFUarray.size())  
-            {   
+            if(j<this->EFUarray.size())
+            {
                 this->EFUarray[j]=EFT1;
                 j++;
                 this->EFT=EFT1;
                 this->EFT.updateDisplay();
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
             QMessageBox::warning(this, tr("is out of bound"),s,
                 QMessageBox::Ok,QMessageBox::Ok);
-            
+
             }
     }
     return;
@@ -3158,7 +3338,7 @@ void MainWindow::computeEFU()
         double Vd=Vdot();
         double aa=aa1*this->U;
 //        aa=0;
-        this->EF=aa+EF00+Vd-Vd0+this->Cg0*(this->U-Vg0); 
+        this->EF=aa+EF00+Vd-Vd0+this->Cg0*(this->U-Vg0);
     int NE=(this->EF+40*this->T-Vd)/dE;
     this->AreaEf.resize(NE,0.0);
     sum=0;
@@ -3169,9 +3349,9 @@ void MainWindow::computeEFU()
         Area=AreaE(E)/10000;
         this->AreaEf[i]=Area;
         if(E<=this->EF) sum=sum+Area;
-    }  
+    }
         this->density=sum;
-    if(sum==0) 
+    if(sum==0)
     {
             QString s;
             s.sprintf("dot is empty at  U=%lg\n",x);
@@ -3195,12 +3375,12 @@ void MainWindow::computeEFU()
         {
             EFT2=EFT1-(sum11-sum)*(EFT1-EFT0)/(sum11-sum10);
             sum12=computeSum(NE, dE, Vd, EFT2);
-            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum) 
+            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum)
             {
                 sum10=sum11;
                 EFT0=EFT1;
             }
-/*            else if(sum12<sum&&sum10<sum||sum12>sum&& sum10>sum) 
+/*            else if(sum12<sum&&sum10<sum||sum12>sum&& sum10>sum)
             {
               if(sum10>sum) EFT0=EFT0-1;//0.5;
               else EFT0=EFT0+1;//0.5;//(EFT0+this->EF)/2;
@@ -3210,14 +3390,14 @@ void MainWindow::computeEFU()
                 sum11=sum12;
                 EFT1=EFT2;
         }
-            if(j<this->EFUarray.size())  
-            {   
+            if(j<this->EFUarray.size())
+            {
                 this->EFUarray[j]=EFT1;
                 j++;
                 this->EFT=EFT1;
                 this->EFT.updateDisplay();
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -3225,7 +3405,7 @@ void MainWindow::computeEFU()
                 QMessageBox::Ok,QMessageBox::Ok);
             break;
             }
-    
+
     }
     }
 }
@@ -3240,7 +3420,7 @@ double MainWindow::computeSum(int NE, double dE, double Vd, double EFT)
 return sum;
 }
 void MainWindow::computeAreaE()
-{   
+{
     winPlotU->show();
     winPlotU->raise();
     winPlotU->setActiveWindow();
@@ -3257,20 +3437,20 @@ void MainWindow::computeAreaE()
     aa1=4/(1+aa1);
     double EF00=this->EF0;
     if(this->T==0) {
-    int j=0;  
+    int j=0;
     for(double x=this->Umin; x<=this->Umax; x+=this->dU)
-    {   this->U=x; 
+    {   this->U=x;
         double aa=aa1*this->U;
 //        aa=0;
         EFT1=aa+EF00+Vdot()-Vd0+this->Cg0*(this->U-Vg0);
-        if(j<this->EFUarray.size())  
-            {   
+        if(j<this->EFUarray.size())
+            {
                 this->EFUarray[j]=EFT1;
                 j++;
                 this->EFT=EFT1;
                 this->EFT.updateDisplay();
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -3308,7 +3488,7 @@ void MainWindow::computeAreaE()
         //       this->plotterT->setCurveData(this->numOfCurve,data);
     }
     ////////////////
-        if(sum==0) 
+        if(sum==0)
     {
             QString s;
             s.sprintf("dot is empty at  U=%lg\n",x);
@@ -3333,7 +3513,7 @@ void MainWindow::computeAreaE()
         {
             EFT2=EFT1-(sum11-sum)*(EFT1-EFT0)/(sum11-sum10);
             sum12=computeSum(NE, dE, Vd, EFT2);
-            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum) 
+            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum)
             {
                 sum10=sum11;
                 EFT0=EFT1;
@@ -3341,14 +3521,14 @@ void MainWindow::computeAreaE()
                 sum11=sum12;
                 EFT1=EFT2;
         }
-          if(j<this->EFUarray.size())  
-            {   
+          if(j<this->EFUarray.size())
+            {
                 this->EFUarray[j]=EFT1;
                 j++;
                 this->EFT=EFT1;
                 this->EFT.updateDisplay();
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -3365,7 +3545,7 @@ void MainWindow::computeAreaE()
 }
 
 /*void MainWindow::computeAreaE()
-{   
+{
     winPlotT->show();
     winPlotT->raise();
     winPlotT->setActiveWindow();
@@ -3414,12 +3594,12 @@ void MainWindow::computeAreaE()
         {
             EFT2=EFT1-(sum11-sum)*(EFT1-EFT0)/(sum11-sum10);
             sum12=computeSum(NE, dE, Vd, EFT2);
-            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum) 
+            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum)
             {
                 sum10=sum11;
                 EFT0=EFT1;
             }
-            else if(sum12<sum&&sum10<sum||sum12>sum&& sum10>sum) 
+            else if(sum12<sum&&sum10<sum||sum12>sum&& sum10>sum)
             {
               if(sum10>sum) EFT0=EFT0-1;//0.5;
               else EFT0=EFT0+1;//0.5;//(EFT0+this->EF)/2;
@@ -3430,7 +3610,7 @@ void MainWindow::computeAreaE()
         }
         this->EFTarray[j]=EFT1;
         j++;
-        this->EFT=EFT1;      
+        this->EFT=EFT1;
         this->EFT.updateDisplay();
         data.push_back(kT);
         data.push_back(EFT1);
@@ -3441,7 +3621,7 @@ void MainWindow::computeAreaE()
 }
 */
 void MainWindow::computeEFT()
-{   
+{
     double E,EFT0,EFT1,EFT2 ;
     double dE=0.1;
     double Ucur=this->U;
@@ -3470,8 +3650,8 @@ void MainWindow::computeEFT()
         if(E<=this->EF) sum=sum+Area;
     }
         this->density=sum;
-    if(sum==0) 
-    {       
+    if(sum==0)
+    {
             QString s;
             s.sprintf("dot is empty at  U=%lg\n",Ucur);
             QMessageBox::warning(this, tr("Warning!!!"),s,
@@ -3480,12 +3660,9 @@ void MainWindow::computeEFT()
     }
     else
     {
-//    int j=0;
     EFT1=this->EF-1.;
     for(int j=0; j<NT; j++)
-//    for(double kT=this->Tmax; kT>=this->Tmin; kT-=this->dT)
     {
-//        this->T=kT;
         this->T=this->Tmax-this->dT*j;
         EFT0=EFT1;//this->EF-1.;//!!!!!!!!!!!!!!!!!
         sum1=computeSum(NE, dE, Vd, EFT0);
@@ -3501,7 +3678,7 @@ void MainWindow::computeEFT()
         {
             EFT2=EFT1-(sum11-sum)*(EFT1-EFT0)/(sum11-sum10);
             sum12=computeSum(NE, dE, Vd, EFT2);
-            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum) 
+            if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum)
             {
                 sum10=sum11;
                 EFT0=EFT1;
@@ -3510,13 +3687,12 @@ void MainWindow::computeEFT()
                 EFT1=EFT2;
         }
         this->EFTarray[j]=EFT1;
-//        j++;
     }
     }
 }
 
 /*void MainWindow::computeRT1()
-{   
+{
     double Gtot, E,dE, Emin,csh,sum,alpha,Ec,Uc,V;
     winPlotT->show();
     winPlotT->raise();
@@ -3540,7 +3716,7 @@ void MainWindow::computeEFT()
 //    if(Ec<Uc) Ec=Uc+dE; //Это неправильно!!!
 //    double g0=cohU(Ec, this->Ey, r1, V, Uc);
     double g0=sedlo(Ec, this->Ey, this->Ex, V);
-    if(kT==0) 
+    if(kT==0)
     {
 //      if(Ec>Uc)  Gtot=cohU(Ec,this->Ey,r1,V,Uc);
       if(Ec>Uc)  Gtot=sedlo(Ec, this->Ey,this->Ex, V);
@@ -3559,7 +3735,7 @@ void MainWindow::computeEFT()
             alpha=0.5*(E-Ec)/kT;
             csh=1./cosh(alpha);
             sum=aa*csh*csh;
-            sumt=sumt+sum; 
+            sumt=sumt+sum;
 //            double g=cohU(E,this->Ey,r1,V,Uc);
             double g=sedlo(E, this->Ey, this->Ex, V);
             GTunnel+= this->gTun*sum;
@@ -3588,7 +3764,7 @@ void MainWindow::computeRT1()
     int G_type = this->typeCond->currentIndex();//checkedId();
 //    if(G_type!=4&&G_type!=3) computeEFT();
 //    if(G_type==0) computeEFT();
-    if(G_type!=4) 
+    if(G_type!=4)
     {
         computeEFT();
 //        double EFTU=this->EFTarray[0];
@@ -3598,20 +3774,20 @@ void MainWindow::computeRT1()
 //    double Ub=Vbarrier(this->rand)+0.5*this->Ey;
     double EF00=this->EF0;
     for (double x =this->Tmax; x >= this->Tmin; x -= dT)
-    {        
+    {
       this->T=x;
 //    for (int j = 0; j < this->EFTarray.size(); ++j)
 //        this->T=this->Tmax-this->dT*j;
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFTarray.size()) 
+            if(j<this->EFTarray.size())
             {
                 double EFTU=this->EFTarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("EFTarray at j=%i\n",j);
@@ -3622,7 +3798,7 @@ void MainWindow::computeRT1()
         this->computeOneR();
         double y=model->conductivity;
         y=6.28*y;
-        if(y>1e-18) 
+        if(y>1e-18)
         {
         data.push_back(x);
         data.push_back(y);
@@ -3641,7 +3817,7 @@ void MainWindow::computeRT()
     int G_type = this->typeCond->currentIndex();
 //    if(G_type==0) computeEFT();
 //    if(G_type!=4&&G_type!=3) computeEFT();
-    if(G_type!=4) 
+    if(G_type!=4)
     {
         computeEFT();
 //        double EFTU=this->EFTarray[0];
@@ -3652,22 +3828,22 @@ void MainWindow::computeRT()
     for (double x = this->Tmax; x >= this->Tmin; x -= dT)
 //    for (double x = this->Tmin; x <= this->Tmax; x += dT)
     {   this->T=x;
-        if(this->flgStop) 
+        if(this->flgStop)
         {
-            this->flgStop=false; 
+            this->flgStop=false;
             return;
         }
 //        if(G_type!=0) this->EFT=EF0;
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFTarray.size()) 
+            if(j<this->EFTarray.size())
             {
                 double EFTU=this->EFTarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -3682,7 +3858,7 @@ void MainWindow::computeRT()
         y=6.28*y;
         data.push_back(x);
         data.push_back(y);
-/*            if(model->conductivity<NCUT*CUTOFF_SIGMA) 
+/*            if(model->conductivity<NCUT*CUTOFF_SIGMA)
             {
                 this->numOfCurve++;
                 break;
@@ -3700,7 +3876,7 @@ void MainWindow::computeReffT()
     std::vector<double> data;
     int r_type = this->typeResistor->checkedId();
     int G_type = this->typeCond->currentIndex();
-    if(G_type!=4) 
+    if(G_type!=4)
     {
         computeEFT();
 //        double EFTU=this->EFTarray[0];
@@ -3713,21 +3889,21 @@ void MainWindow::computeReffT()
     {   this->T=x;
         this->T.updateDisplay();
 
-        if(this->flgStop) 
+        if(this->flgStop)
         {
-            this->flgStop=false; 
+            this->flgStop=false;
             return;
         }
         if(G_type==4) this->EFT=EF00;
         else
         {
-            if(j<this->EFTarray.size()) 
+            if(j<this->EFTarray.size())
             {
                 double EFTU=this->EFTarray[j];
                 this->EFT=EFTU;
                 j++;
             }
-            else 
+            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -3755,7 +3931,7 @@ void MainWindow::computeReffT()
     int G_type = this->typeCond->currentIndex();
 //    if(G_type==0) computeEFT();
 //    if(G_type!=4&&G_type!=3) computeEFT();
-    if(G_type!=4) 
+    if(G_type!=4)
     {
         computeEFT();
         double EFTU=this->EFTarray[0];
@@ -3766,9 +3942,9 @@ void MainWindow::computeReffT()
 //    for (double x = this->Tmin; x <= this->Tmax; x += dT)
     {   this->T=x;
         randomizeSigma_2();
-        if(this->flgStop) 
+        if(this->flgStop)
         {
-            this->flgStop=false; 
+            this->flgStop=false;
             return;
         }
 //        if(G_type!=0) this->EFT=EF0;
@@ -3781,7 +3957,7 @@ void MainWindow::computeReffT()
         }
         double sum=0;
             for (int i = 0; i < model->nI(); ++i)
-    {   
+    {
         sum=sum+log(model->Sigma[i]);
     }
         sum=sum/model->nI();
@@ -3799,7 +3975,7 @@ void MainWindow::myMouseMoveEvent(QMouseEvent *e)
 {
     static int processing;
     static QLabel *label;
-    if (processing) 
+    if (processing)
     {
         e->ignore();
         return;
@@ -3812,42 +3988,8 @@ void MainWindow::myMouseMoveEvent(QMouseEvent *e)
     processing = 0;
 }
 
-/*void MainWindow::randomizeSigma_1()
-{
-//    static int seed;
-    VSLStreamStatePtr stream;
-    vslNewStream( &stream, VSL_BRNG_MCG31, this->seed );
-    vdRngUniform( 0, stream, model->nI(), model->Sigma.data(), 0.0, 1.0 );
-    vslDeleteStream( &stream );
-
-    for (int i=0; i < model->nI(); ++i)
-           model->Sigma[i] *= - 1./this->T;
-
-    vdExp(model->nI(), model->Sigma.data(), model->Sigma.data());
-    for (int i=0; i < model->nI(); ++i)
-    {
-        QPair<int,int> ends = model->ends(i);
-        int from = ends.first;
-        int to   = ends.second;
-        QPair<double,double> xy0 = model->xy(from);
-        QPair<double,double> xy1 = model->xy(to);
- 
-        if (xy0.first==0 && xy1.first==0
-            || xy0.first==0 && xy1.first==1
-            || xy0.first==1 && xy1.first==0
-            || xy0.first==1 && xy1.first==1
-            || xy0.first==model->xmax() && xy1.first==model->xmax() 
-            || xy0.first==model->xmax()-1 && xy1.first==model->xmax()
-            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1  
-            || xy0.first==model->xmax()-1 && xy1.first==model->xmax()-1
-            )
-        {
-            model->Sigma[i]=this->sigmaU;
-        }
-    }
-}*/
 double MainWindow::cohU(double E, double Ey, double A, double V, double Uc)
-{ 
+{
   double  kaA,G0,G1,U0,EE;
   double sh2,cos2,BB;
   U0=V-Uc;
@@ -3855,7 +3997,7 @@ double MainWindow::cohU(double E, double Ey, double A, double V, double Uc)
   G0=0;
   this->gTun=0;
   this->gOv=0;
-  while(EE>0) 
+  while(EE>0)
   {
   kaA=A*sqrt(EE/E0);
   sh2=sinh(3.14159*kaA);
@@ -3898,14 +4040,14 @@ else return CUTOFF_SIGMA;
 }
 */
 void MainWindow::potential()
-{ 
+{
   winPlotU->show();
   winPlotU->raise();
   winPlotU->setActiveWindow();
   std::vector<double> data;
   std::vector<double> data1;
       int G_type = this->typeCond->currentIndex();//checkedId();
-    if(G_type!=4) 
+    if(G_type!=4)
     {
         computeEF_TU();
     }
@@ -3913,13 +4055,9 @@ void MainWindow::potential()
   double V=Vbarrier(this->rand);
   double Uc=Vdot();
   double a1=a_barrier;
-    
-  //  double a1=100;
-//  double Va=V-12.50;//meV
-//  V=V+2*exp(-this->T/0.6);!!!!!!!!!!!!!!!
-  double Va=V-11.00;//meV
-  V=V*(1+sqrt(0.05/this->T));
-  double a0=2/this->Ex*sqrt(E0*(V-Va));
+  double Va=V-13.00;//meV
+  V=V*(1+sqrt(0.06/this->T));
+  double a0=2/Ex*sqrt(E0*(V-Va));
   double a2=a0/a1;
   double U00=V-Va;
   double U01=Va/(1-a2*a2);
@@ -3961,6 +4099,7 @@ double MainWindow::sedlo(double E, double Ey, double Ex, double V)
   Uc=Vdot();
   double a1=a_barrier;//120;//100;//80;//100;//500;//nm
 //  V=V+(V-Va)*0.04/this->T;
+// if you change parameter here, change them in subroutine potential()
   double Va=V-13.00;//meV
   V=V*(1+sqrt(0.06/this->T));
   double a0=2/Ex*sqrt(E0*(V-Va));
@@ -4036,7 +4175,7 @@ double MainWindow::Vdot(void)
 
 double MainWindow::singleSigma(double r, double rEx)
 //double MainWindow::singleSigma(double r)
-{   
+{
     double Gtot, E,dE, Emin,csh,sum,alpha,Ec,Uc,V;
     V=Vbarrier(r);
     Uc=Vdot();
@@ -4044,11 +4183,11 @@ double MainWindow::singleSigma(double r, double rEx)
     dE=0.1;
     if(dE>=0.6) dE=0.5;
     Ec=this->EFT;
-//    this->Ex=rEx; 
+//    this->Ex=rEx;
 //    double g0=cohU(Ec, this->Ey, r1, V, Uc);
 //    double g0=sedlo(Ec, this->Ey, this->Ex, V);
     double g0=sedlo(Ec, this->Ey, rEx, V);
-    if(kT==0) 
+    if(kT==0)
     {
 //      if(Ec>Uc)  Gtot=cohU(Ec,this->Ey,r1,V,Uc);
 //      if(Ec>Uc)  Gtot=sedlo(Ec, this->Ey,this->Ex, V);
@@ -4069,7 +4208,7 @@ double MainWindow::singleSigma(double r, double rEx)
             alpha=0.5*(E-Ec)/kT;
             csh=1./cosh(alpha);
             sum=aa*csh*csh;
-            sumt=sumt+sum; 
+            sumt=sumt+sum;
 //            double g=cohU(E,this->Ey,r1,V,Uc);
             double g=sedlo(E, this->Ey, rEx, V);
             GTunnel+= this->gTun*sum;
@@ -4095,11 +4234,11 @@ double MainWindow::singleSigma(double r, double rEx)
     Gtot=Gtot*this->G_ser/(Gtot+this->G_ser);
   if(Gtot<this->CUTOFF_SIGMA) return this->CUTOFF_SIGMA;
 //  if(Gtot>5) return 5;
-  else 
+  else
       return Gtot;
 }
 void MainWindow::randRcr()
-{   
+{
     this->i_Rcr = model->index_of_Rcr();
     elementCr = fabs((model->I[ i_Rcr ]));
     this->sigmaMin=model->Sigma[i_Rcr ];
@@ -4138,14 +4277,14 @@ void MainWindow::randomizeSigma_2()
         int to   = ends.second;
         QPair<double,double> xy0 = model->xy(from);
         QPair<double,double> xy1 = model->xy(to);
- 
+
         if (xy0.first==0 && xy1.first==0
             || xy0.first==0 && xy1.first==1
             || xy0.first==1 && xy1.first==0
             || xy0.first==1 && xy1.first==1
-            || xy0.first==model->xmax() && xy1.first==model->xmax() 
+            || xy0.first==model->xmax() && xy1.first==model->xmax()
             || xy0.first==model->xmax()-1 && xy1.first==model->xmax()
-            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1  
+            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1
             || xy0.first==model->xmax()-1 && xy1.first==model->xmax()-1
             )
         {
@@ -4160,8 +4299,8 @@ void MainWindow::randomizeSigma_2()
             else model->Sigma[i] = singleSigma(x1,x2);
 //            else model->Sigma[i] = singleSigma(x1);
 //            model->Sigma[i] = singleSigma(x1);
-//            if(this->r_c>0&&model->Sigma[i]<sigma_m) model->Sigma[i]=CUTOFF_SIGMA;   
-        }     
+//            if(this->r_c>0&&model->Sigma[i]<sigma_m) model->Sigma[i]=CUTOFF_SIGMA;
+        }
     }
 }
 /*
@@ -4183,14 +4322,14 @@ void MainWindow::randomizeSigma_2()
         int to   = ends.second;
         QPair<double,double> xy0 = model->xy(from);
         QPair<double,double> xy1 = model->xy(to);
- 
+
         if (xy0.first==0 && xy1.first==0
             || xy0.first==0 && xy1.first==1
             || xy0.first==1 && xy1.first==0
             || xy0.first==1 && xy1.first==1
-            || xy0.first==model->xmax() && xy1.first==model->xmax() 
+            || xy0.first==model->xmax() && xy1.first==model->xmax()
             || xy0.first==model->xmax()-1 && xy1.first==model->xmax()
-            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1  
+            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1
             || xy0.first==model->xmax()-1 && xy1.first==model->xmax()-1
             )
         {
@@ -4205,8 +4344,8 @@ void MainWindow::randomizeSigma_2()
             else model->Sigma[i] = singleSigma(x1,x2);
 //            else model->Sigma[i] = singleSigma(x1);
 //            model->Sigma[i] = singleSigma(x1);
-//            if(this->r_c>0&&model->Sigma[i]<sigma_m) model->Sigma[i]=CUTOFF_SIGMA;   
-        }     
+//            if(this->r_c>0&&model->Sigma[i]<sigma_m) model->Sigma[i]=CUTOFF_SIGMA;
+        }
     }
 }*/
 void MainWindow::randomizeSigma_1()
@@ -4227,44 +4366,34 @@ void MainWindow::randomizeSigma_1()
         int to   = ends.second;
         QPair<double,double> xy0 = model->xy(from);
         QPair<double,double> xy1 = model->xy(to);
- 
+
         if (xy0.first==0 && xy1.first==0
             || xy0.first==0 && xy1.first==1
             || xy0.first==1 && xy1.first==0
             || xy0.first==1 && xy1.first==1
-            || xy0.first==model->xmax() && xy1.first==model->xmax() 
+            || xy0.first==model->xmax() && xy1.first==model->xmax()
             || xy0.first==model->xmax()-1 && xy1.first==model->xmax()
-            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1  
+            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1
             || xy0.first==model->xmax()-1 && xy1.first==model->xmax()-1
             )
         {
             model->Sigma[i]=this->sigmaU;
         }
         else  {x1=model->Sigma[i];
+//        if (x1 < 0.4) model->Sigma[i] = this->CUTOFF_SIGMA;
         if (x1 < this->r_c) model->Sigma[i] = this->CUTOFF_SIGMA;
             else model->Sigma[i] =1;
         }
- 
-        }     
-    
+
+        }
+
 }
 void MainWindow::randomizeSigma_0()
 {   double x1,x2,x3;
-//   Q3MemArray<double> t( model->nI() );
-   VSLStreamStatePtr stream;
-//    static int iseed;
-//    iseed=this->seed;
-//    vslNewStream( &stream, VSL_BRNG_MCG31, 0);
-//    vslNewStream( &stream, VSL_BRNG_MCG31, iseed++ );
-//    this->seed=iseed;
+    VSLStreamStatePtr stream;
     vslNewStream( &stream, VSL_BRNG_MCG31, this->seed );
     vdRngUniform( 0, stream, model->nI(), model->Sigma.data(), 0.0, 1.0 );
     vslDeleteStream( &stream );
-/*    VSLStreamStatePtr stream1;
-    vslNewStream( &stream1, VSL_BRNG_MCG31, this->seed+111);
-    vdRngUniform( 0, stream1, t.size(), t.data(), 0.0, 1.0 );
-    vslDeleteStream( &stream1);
-    */
     for (int i=0; i < model->nI(); ++i)
     {
         QPair<int,int> ends = model->ends(i);
@@ -4272,36 +4401,27 @@ void MainWindow::randomizeSigma_0()
         int to   = ends.second;
         QPair<double,double> xy0 = model->xy(from);
         QPair<double,double> xy1 = model->xy(to);
- 
+
         if (xy0.first==0 && xy1.first==0
             || xy0.first==0 && xy1.first==1
             || xy0.first==1 && xy1.first==0
-            || xy0.first==1 && xy1.first==1 
-            || xy0.first==model->xmax() && xy1.first==model->xmax() 
+            || xy0.first==1 && xy1.first==1
+            || xy0.first==model->xmax() && xy1.first==model->xmax()
             || xy0.first==model->xmax()-1 && xy1.first==model->xmax()
-            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1  
+            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1
             || xy0.first==model->xmax()-1 && xy1.first==model->xmax()-1
             )
         {
             model->Sigma[i]=this->sigmaU;
-//            model->Sigma[i]=1;//this->sigmaU;
         }
         else  {x1=model->Sigma[i];
-//            x2=this->Ex+this->deltaEx*(0.5-t[i]);
-//            x2=this->deltaEx+3*(0.5-t[i]);
-//            x2=t[i];
             if (x1 < this->r_c) model->Sigma[i] = this->CUTOFF_SIGMA;
             else model->Sigma[i] = exp(-this->kappa*x1);
-//            else model->Sigma[i] = 1000*exp(-this->kappa*x1);
-//            else model->Sigma[i] = exp(-kappa*(1-x1))/(1+exp(-(this->EF0-x2)/this->T));
-//            else model->Sigma[i] = exp(-x2/sqrt(this->T));
-//            else model->Sigma[i] = exp(-(kappa*sqrt(this->T))*(1-x1)-x2/this->T);
-//            else model->Sigma[i] = exp(-(kappa-this->T)*(0.5+1-x1)-x2/this->T);
             if (model->Sigma[i]<this->CUTOFF_SIGMA) model->Sigma[i] = this->CUTOFF_SIGMA;
         }
- 
-        }     
-    
+
+        }
+
 }
 
 void MainWindow::selectSigma(int i)
@@ -4309,52 +4429,12 @@ void MainWindow::selectSigma(int i)
     this->setModel();
     switch(i)
     {
-    case 0: 
+    case 0: /* uniform Sigma */
         this->randomizeSigma_0();
         break;
-        /* uniform Sigma */
-/*        {
-//            double x3=this->Exc; 
-//            double x2=this->Eyc;
-            double x1=this->randc;
-//            this->Ey=x2;
-//            this->Ex=x3;
-            this->rand=x1; 
-            this->Ex.updateDisplay();
-            this->Ey.updateDisplay();
-            this->rand.updateDisplay();
-        for (int i = 0; i < model->nI(); ++i) 
-            {
-        QPair<int,int> ends = model->ends(i);
-        int from = ends.first;
-        int to   = ends.second;
-        QPair<double,double> xy0 = model->xy(from);
-        QPair<double,double> xy1 = model->xy(to);
- 
-        if (xy0.first==0 && xy1.first==0
-            || xy0.first==0 && xy1.first==1
-            || xy0.first==1 && xy1.first==0
-            || xy0.first==1 && xy1.first==1
-            || xy0.first==model->xmax() && xy1.first==model->xmax() 
-            || xy0.first==model->xmax()-1 && xy1.first==model->xmax()
-            || xy0.first==model->xmax()   && xy1.first==model->xmax()-1  
-            || xy0.first==model->xmax()-1 && xy1.first==model->xmax()-1
-            )
-        {
-            model->Sigma[i]=this->sigmaU;
-        }
-        else 
-        {
-            model->Sigma[i] = singleSigma(this->rand);
-        }
-     }
-        }
-        break;
-*/
     case 1: /* random Sigma */
         this->randomizeSigma_1();
         break;
-            
     case 2: /* unimplemented */
         this->randomizeSigma_2();
         break;
@@ -4366,7 +4446,7 @@ void MainWindow::selectSigma(int i)
 /*void MainWindow::setConductivity()
 {
     double I1,I2;
-    for (int i=0; i < model->nI(); ++i) 
+    for (int i=0; i < model->nI(); ++i)
     {
         QPair<int,int> ends = model->ends(i);
         int from = ends.first;
@@ -4387,13 +4467,13 @@ void MainWindow::selectSigma(int i)
 void MainWindow::resizeEvent( QResizeEvent *e )
 {
     /*
-    QSize nsz = e->size(); 
+    QSize nsz = e->size();
     QSize osz = e->oldSize();
     Q3Canvas *c = cv->canvas();
 
     c->resize(
         c->width()+nsz.width()-osz.width(),
-        c->height()+nsz.height()-osz.height() 
+        c->height()+nsz.height()-osz.height()
         );
         */
 }

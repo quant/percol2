@@ -10,6 +10,9 @@
 #include <q3textstream.h>
 #include <QMap>
 
+#define DATAOF(array) array.data()
+#define MYMAP  QMap
+
 // Find maximum value in a container
 template<typename T>
 T vmax(T *begin, T *end)
@@ -32,20 +35,18 @@ Percol2D::~Percol2D(void)
 
 // Compute using general matrix
 void Percol2D::compute_general()
-//void Percol2D::compute()
 {
     int nv = this->nV(); // number of defined nodes
     int nw = this->nW(); // number of undefined nodes
     int ni = this->nI(); // number of current links
-//    int ndifV = this->nI(); // number of current links
 
     // Build LHS matrix = S_W^T SIGMA S_W
-    Q3MemArray<double> lhs( nw*nw );
+    MYARRAY<double> lhs( nw*nw );
     lhs.fill(0.0);
 
     for (int i = 0; i < ni; ++i)
     {
-        QPair<int,int> ends = this->ends(i);
+        MYPAIR<int,int> ends = this->ends(i);
         int r = ends.first - nv;
         int c = ends.second - nv;
         double sigma = this->Sigma[i];
@@ -72,7 +73,7 @@ void Percol2D::compute_general()
     }
 
     // Build temp vector = SIGMA S_V V
-    Q3MemArray<double> t( ni );
+    MYARRAY<double> t( ni );
     t.fill(0.0);
     for (int i = 0; i < ni; ++i)
     {
@@ -84,7 +85,7 @@ void Percol2D::compute_general()
     }
 
     // Build right hand side: rhs = -S(...) SIGMA S_V V
-    Q3MemArray<double> rhs( nw );
+    MYARRAY<double> rhs( nw );
     rhs.fill(0.0);
 
     for (int w = 0; w < nw; ++w)
@@ -97,9 +98,9 @@ void Percol2D::compute_general()
     }
 
     int ONE = 1;
-    Q3MemArray<int> ipiv( nw );
+    MYARRAY<int> ipiv( nw );
 
-    // Before factoring with dgetrf we compute anorm, used later to estimate rcond 
+    // Before factoring with dgetrf we compute anorm, used later to estimate rcond
 #if WANT_1NORM_RCOND
     double anorm_1 = 0;
     for (int c = 0; c < nw; ++c)
@@ -126,7 +127,7 @@ void Percol2D::compute_general()
 
     int info;
     //dgesv(&nw, &ONE, lhs.data(), &nw, ipiv.data(), rhs.data(), &nw, &info );
-    dgetrf(&nw,&nw,lhs.data(),&nw,ipiv.data(),&info);
+    dgetrf(&nw,&nw,DATAOF(lhs),&nw,DATAOF(ipiv),&info);
     if (info > 0)
     {
         // The system is degenerate, so we'll only solve part of it
@@ -141,17 +142,17 @@ void Percol2D::compute_general()
             exit(1);
         }
     }
-    Q3MemArray<double> wrk( 4*nw );
-    Q3MemArray<int> iwk( nw );
+    MYARRAY<double> wrk( 4*nw );
+    MYARRAY<int> iwk( nw );
 #if WANT_1NORM_RCOND
     dgecon("1-Norm",&nw,lhs.data(),&nw,&anorm_1,&this->rcond,wrk.data(),iwk.data(),&info);
 #else
-    dgecon("Infinity-norm",&nw,lhs.data(),&nw,&anorm_8,&this->rcond,wrk.data(),iwk.data(),&info);
+    dgecon("Infinity-norm",&nw,DATAOF(lhs),&nw,&anorm_8,&this->rcond,DATAOF(wrk),DATAOF(iwk),&info);
 #endif
     // Let's compute cond, which is the product of diagonal elements
     assert( info == 0 );
 
-    dgetrs("No transpose",&nw,&ONE,lhs.data(),&nw,ipiv.data(),rhs.data(),&nw,&info);
+    dgetrs("No transpose",&nw,&ONE,DATAOF(lhs),&nw,DATAOF(ipiv),DATAOF(rhs),&nw,&info);
 
     for (int w = 0; w < nw; ++w)
     {
@@ -161,7 +162,7 @@ void Percol2D::compute_general()
     // Given V and W, compute I
     for (int i = 0; i < ni; ++i)
     {
-        QPair<int,int> ends = this->ends(i);
+        MYPAIR<int,int> ends = this->ends(i);
         if (ends.first < nv)
             this->I[i] = - this->Sigma[i] * this->V[ends.first];
         else
@@ -183,11 +184,11 @@ void Percol2D::computeOld()
     int ni = this->nI(); // number of current links
 
     // Build band-stored LHS matrix = S_W^T SIGMA S_W
-    typedef QMap<QPair<int,int>,double> RC_D_map;
+    typedef MYMAP<MYPAIR<int,int>,double> RC_D_map;
     RC_D_map nonz; //here we'll keep only nonzero elements of lhs(r,c)
     for (int i = 0; i < ni; ++i)
     {
-        QPair<int,int> ends = this->ends(i);
+        MYPAIR<int,int> ends = this->ends(i);
         int r = ends.first - nv;
         int c = ends.second - nv;
         double sigma = this->Sigma[i];
@@ -195,7 +196,7 @@ void Percol2D::computeOld()
         {
             double sir = this->S(i,r+nv);
             double sic = this->S(i,c+nv);
-#define NONZ(r,c) nonz[qMakePair(r,c)]
+#define NONZ(r,c) nonz[MYPAIR<int,int>(r,c)]
             NONZ(r,c) +=  sir * sigma * sic;
             NONZ(r,r) +=  sir * sigma * sir;
             NONZ(c,r) +=  sic * sigma * sir;
@@ -213,7 +214,7 @@ void Percol2D::computeOld()
         }
     }
     // Now determine kl and ku - numbers of sub- and super- diagonals.
-    Q3MemArray<int> tkl(nw), tku(nw);
+    MYARRAY<int> tkl(nw), tku(nw);
     tkl.fill(0);
     tku.fill(0);
     for (RC_D_map::const_iterator e = nonz.constBegin(); e != nonz.constEnd(); ++e)
@@ -228,7 +229,7 @@ void Percol2D::computeOld()
 
     // Now prepare the lhs matrix with banded storage
     int lhs_rows = kl + ku + 1 + kl; // last kl is for LU factorization with dgbtrf
-    Q3MemArray<double> lhs( lhs_rows * nw );
+    MYARRAY<double> lhs( lhs_rows * nw );
     lhs.fill(0);
     for (RC_D_map::const_iterator e = nonz.constBegin(); e != nonz.constEnd(); ++e)
     {
@@ -241,7 +242,7 @@ void Percol2D::computeOld()
     }
 
     // Build temp vector = SIGMA S_V V
-    Q3MemArray<double> t( ni );
+    MYARRAY<double> t( ni );
     t.fill(0.0);
     for (int i = 0; i < ni; ++i)
     {
@@ -253,7 +254,7 @@ void Percol2D::computeOld()
     }
 
     // Build right hand side: rhs = -S(...) SIGMA S_V V
-    Q3MemArray<double> rhs( nw );
+    MYARRAY<double> rhs( nw );
     rhs.fill(0.0);
 
     for (int w = 0; w < nw; ++w)
@@ -266,7 +267,7 @@ void Percol2D::computeOld()
     }
 
     int ONE = 1;
-    Q3MemArray<int> ipiv( nw );
+    MYARRAY<int> ipiv( nw );
 
     // Before factoring with dgbtrf we compute anorm, used later to estimate rcond
 //#define WANT_1NORM_RCOND 1
@@ -295,8 +296,8 @@ void Percol2D::computeOld()
 #endif
 
     int info;
-    Q3MemArray<double> lhs_saved = lhs.copy();
-    dgbtrf(&nw,&nw,&kl,&ku, lhs.data(),&lhs_rows,ipiv.data(),&info);
+    MYARRAY<double> lhs_saved = lhs.copy();
+    dgbtrf(&nw,&nw,&kl,&ku, DATAOF(lhs),&lhs_rows,DATAOF(ipiv),&info);
 
     if (info > 0)
     {
@@ -312,7 +313,7 @@ void Percol2D::computeOld()
             exit(1);
         }
     }
-    if (0) 
+    if (0)
     {
         QFile f("tmp.txt");
         f.open(QIODevice::WriteOnly);
@@ -322,19 +323,19 @@ void Percol2D::computeOld()
         f.close();
     }
 
-    Q3MemArray<double> wrk( 3*nw );
-    Q3MemArray<int> iwk( nw );
+    MYARRAY<double> wrk( 3*nw );
+    MYARRAY<int> iwk( nw );
 #if WANT_1NORM_RCOND
     dgbcon("1-Norm",&nw,&kl,&ku,lhs.data(),&lhs_rows,ipiv.data(),&anorm_1,&this->rcond,
            wrk.data(), iwk.data(), &info);
 #else
-    dgbcon("Inf-Norm",&nw,&kl,&ku,lhs.data(),&lhs_rows,ipiv.data(),&anorm_8,&this->rcond,
-           wrk.data(), iwk.data(), &info);
+    dgbcon("Inf-Norm",&nw,&kl,&ku,DATAOF(lhs),&lhs_rows,DATAOF(ipiv),&anorm_8,&this->rcond,
+           DATAOF(wrk), DATAOF(iwk), &info);
 #endif
     // Let's compute cond, which is the product of diagonal elements
     assert( info == 0 );
 
-    dgbtrs("No transpose",&nw,&kl,&ku,&ONE,lhs.data(),&lhs_rows,ipiv.data(),rhs.data(),&nw,&info);
+    dgbtrs("No transpose",&nw,&kl,&ku,&ONE,DATAOF(lhs),&lhs_rows,DATAOF(ipiv),DATAOF(rhs),&nw,&info);
 
     for (int w = 0; w < nw; ++w)
     {
@@ -344,7 +345,7 @@ void Percol2D::computeOld()
     // Given V and W, compute I
     for (int i = 0; i < ni; ++i)
     {
-        QPair<int,int> ends = this->ends(i);
+        MYPAIR<int,int> ends = this->ends(i);
         if (ends.first < nv)
             this->I[i] = - this->Sigma[i] * this->V[ends.first];
         else
@@ -366,11 +367,11 @@ void Percol2D::compute()
     int ni = this->nI(); // number of current links
 
     // Build band-stored LHS matrix = S_W^T SIGMA S_W
-    typedef QMap<QPair<int,int>,double> RC_D_map;
+    typedef MYMAP<MYPAIR<int,int>,double> RC_D_map;
     RC_D_map nonz; //here we'll keep only nonzero elements of lhs(r,c)
     for (int i = 0; i < ni; ++i)
     {
-        QPair<int,int> ends = this->ends(i);
+        MYPAIR<int,int> ends = this->ends(i);
         int r = ends.first - nv;
         int c = ends.second - nv;
         double sigma = this->Sigma[i];
@@ -378,7 +379,8 @@ void Percol2D::compute()
         {
             double sir = this->S(i,r+nv);
             double sic = this->S(i,c+nv);
-#define NONZ(r,c) nonz[qMakePair(r,c)]
+#undef NONZ
+#define NONZ(r,c) nonz[MYPAIR<int,int>(r,c)]
             NONZ(r,c) +=  sir * sigma * sic;
             NONZ(r,r) +=  sir * sigma * sir;
             NONZ(c,r) +=  sic * sigma * sir;
@@ -396,7 +398,7 @@ void Percol2D::compute()
         }
     }
     // Now determine kl and ku - numbers of sub- and super- diagonals.
-    Q3MemArray<int> tkl(nw), tku(nw);
+    MYARRAY<int> tkl(nw), tku(nw);
     tkl.fill(0);
     tku.fill(0);
     for (RC_D_map::const_iterator e = nonz.constBegin(); e != nonz.constEnd(); ++e)
@@ -411,7 +413,7 @@ void Percol2D::compute()
 
     // Now prepare the lhs matrix with banded storage
     int lhs_rows = /*kl +*/ ku + 1 + kl; // last kl is for LU factorization with dgbtrf
-    Q3MemArray<double> lhs( lhs_rows * nw );
+    MYARRAY<double> lhs( lhs_rows * nw );
     lhs.fill(0);
     for (RC_D_map::const_iterator e = nonz.constBegin(); e != nonz.constEnd(); ++e)
     {
@@ -424,7 +426,7 @@ void Percol2D::compute()
     }
 
     // Build temp vector = SIGMA S_V V
-    Q3MemArray<double> t( ni );
+    MYARRAY<double> t( ni );
     t.fill(0.0);
     for (int i = 0; i < ni; ++i)
     {
@@ -436,7 +438,7 @@ void Percol2D::compute()
     }
 
     // Build right hand side: rhs = -S(...) SIGMA S_V V
-    Q3MemArray<double> rhs( nw );
+    MYARRAY<double> rhs( nw );
     rhs.fill(0.0);
 
     for (int w = 0; w < nw; ++w)
@@ -449,30 +451,30 @@ void Percol2D::compute()
     }
 
     int ONE = 1;
-    Q3MemArray<int> ipiv( nw );
+    MYARRAY<int> ipiv( nw );
     int info;
-    Q3MemArray<double> lhs_saved = lhs.copy();
-    Q3MemArray<double> wrk( 3*nw );
-    Q3MemArray<int> iwk( nw );
-    Q3MemArray<double> dr( nw );
-    Q3MemArray<double> dc( nw );
+    MYARRAY<double> lhs_saved = lhs.copy();
+    MYARRAY<double> wrk( 3*nw );
+    MYARRAY<int> iwk( nw );
+    MYARRAY<double> dr( nw );
+    MYARRAY<double> dc( nw );
     char equed;
     int afb_rows = 1 + kl + ku + kl;
-    Q3MemArray<double> afb( afb_rows*nw );
+    MYARRAY<double> afb( afb_rows*nw );
     dgbsvx("Equilibrate","No transpose",&nw,&kl,&ku,&ONE,
-        lhs_saved.data(),&lhs_rows,
-        afb.data(), &afb_rows, 
-        ipiv.data(), 
-        &equed, dr.data(), dc.data(), 
-        rhs.data(), &nw,
-        this->W.data(), &nw,
+        DATAOF(lhs_saved),&lhs_rows,
+        DATAOF(afb), &afb_rows,
+        DATAOF(ipiv),
+        &equed, DATAOF(dr), DATAOF(dc),
+        DATAOF(rhs), &nw,
+        DATAOF(this->W), &nw,
         &this->rcond,
-        &ferr, &berr, wrk.data(), iwk.data(), &info);
+        &ferr, &berr, DATAOF(wrk), DATAOF(iwk), &info);
 
     // Given V and W, compute I
     for (int i = 0; i < ni; ++i)
     {
-        QPair<int,int> ends = this->ends(i);
+        MYPAIR<int,int> ends = this->ends(i);
         if (ends.first < nv)
             this->I[i] = - this->Sigma[i] * this->V[ends.first];
         else
@@ -486,136 +488,100 @@ void Percol2D::compute()
 //-------voltage difference
     double V_1,V_2,V12;
     this->difV.fill(0.0);
-        for (int i = 0; i < ni; ++i)
+    for (int i = 0; i < ni; ++i)
     {
-	QPair<int,int> ends_i = this->ends(i);
-    if(ends_i.first < nv) 
-        V_1=this->V[ends_i.first];
-    else 
-        V_1=this->W[ends_i.first-nv];
-    if(ends_i.second < nv) 
-        V_2=this->V[ends_i.second];
-    else 
-        V_2=this->W[ends_i.second-nv];
-    V12=(V_1-V_2);
-    this->difV[i]=(V_1-V_2);
+        MYPAIR<int,int> ends_i = this->ends(i);
+        if(ends_i.first < nv)
+            V_1=this->V[ends_i.first];
+        else
+            V_1=this->W[ends_i.first-nv];
+        if(ends_i.second < nv)
+            V_2=this->V[ends_i.second];
+        else
+            V_2=this->W[ends_i.second-nv];
+        V12=(V_1-V_2);
+        this->difV[i]=(V_1-V_2);
      }
-  
-    //----------------------------------
+//----------------------------------
     double imax = -1e300;
     double q;
     for (int i = 0; i < ni; ++i)
-    {   
+    {
         q = this->I[i];
-        if (fabs(q) > imax) 
+        if (fabs(q) > imax)
         {
-            imax = fabs(q); 
+            imax = fabs(q);
         }
     }
 
     double deltai_max = 0;
-    double I1,I2;
-    for (int i=0; i < ni; ++i) 
+    double I1=0,I2=0;
+    for (int i=0; i < ni; ++i)
     {
-        QPair<int,int> ends = this->ends(i);
+        MYPAIR<int,int> ends = this->ends(i);
         int from = ends.first;
         int to   = ends.second;
-        QPair<double,double> xy0 = this->xy(from);
-        QPair<double,double> xy1 = this->xy(to);
+        MYPAIR<double,double> xy0 = this->xy(from);
+        MYPAIR<double,double> xy1 = this->xy(to);
         if(xy0.first==0 && xy1.first==0&&
             (xy0.second==0&&xy1.second==1||xy0.second==1&&xy1.second==0)) I1=this->I[i];
         if(xy0.second==0 && xy1.second==0&&
             (xy0.first==0&&xy1.first==1||xy0.first==1&&xy1.first==0)) I2=this->I[i];
     }
-       conductivity = fabs(I1+I2)/2;
+    conductivity = fabs(I1+I2)/2;
+
 //-------Joule heat
     double IdVmax = -1e300;
     double ImaxV = conductivity*4.;
-        {
-    double V_1,V_2,V12;
-    this->IdifV.fill(0.0);
-//    double IdVmax = -1e300;
-    double q;
-        for (int i = 0; i < ni; ++i)
     {
-	QPair<int,int> ends_i = this->ends(i);
-    if(ends_i.first < nv) 
-        V_1=this->V[ends_i.first];
-    else 
-        V_1=this->W[ends_i.first-nv];
-    if(ends_i.second < nv) 
-        V_2=this->V[ends_i.second];
-    else 
-        V_2=this->W[ends_i.second-nv];
-    V12=(V_1-V_2);
-    q=fabs(this->I[i]*(V_1-V_2));
-//    this->IdifV[i]=q;
-    this->IdifV[i]=q/ImaxV;
-        if (q > IdVmax) 
+        this->IdifV.fill(0.0);
+        double q;
+        for (int i = 0; i < ni; ++i)
         {
-            IdVmax = q; 
+            q=fabs(this->I[i]*this->difV[i]);
+//            this->IdifV[i]=q;
+            this->IdifV[i]=q/ImaxV;
+            if (q > IdVmax&&this->Sigma[i]!=100)
+            {
+                IdVmax = q;
+            }
         }
-     }
-        }
+    }
     //----------------------------------
 
        //--------------Current Fraction----------------
-       {     
+       {
         int nt=0;
         int nS=0;
         for (int i = 0; i < ni; ++i)
-        {   
+        {
             double q = fabs(this->I[i]);
             if(this->Sigma[i]!=100){
                 nS++;
             if(q > imax * 1e-3) nt++;
             }
         }
-//   fractionI = double(nt)/double(ni);
 //   capacity = double(nt)/double(nS);
        }
 //--------------Joule heat Fraction----------------
-       {     
+       {
         int nt=0;
         for (int i = 0; i < ni; ++i)
-        {   
+        {
+            if(this->Sigma[i]!=100){
             double q = fabs(this->IdifV[i]);
-//            if(q > IdVmax * 0.1) nt++; 
-            if(q > IdVmax/ImaxV * 0.1) nt++; 
+//            if(q > IdVmax * 0.1) nt++;
+            if(q > IdVmax/ImaxV * 0.5) nt++;
+            }
         }
-//   fractionIdV = double(nt)/double(ni);
    capacity = double(nt);///double(ni);
        }
-//ниже фигня!!!
-        /*   
-//--------------CAPACITY----------------
-       {     
-        Q3MemArray<double> t( nv+nw );
-        int nt;
-        t.fill(0.0);
-        for (int i = 0; i < ni; ++i)
-        {   
-            double q = fabs(this->I[i]);
-            QPair<int,int> ends = this->ends(i);
-            t[ends.first] += q;
-            t[ends.second] += q;
-        }
-        nt=0;
-        for (int v = 0; v < nv + nw; ++v)  
-        {
-            if(t[v] > imax * 1e-4) 
-//            if(t[v] < imax * 1e-4) 
-                nt++;
-        }
-        capacity = double(nt)/double(nv+nw);
-       }
-*/
        //--------------------------
 
     for (int w = 0; w < nw; ++w)
     {
-        Q3MemArray<int> from = this->from(nv+w);
-        Q3MemArray<int> to = this->to(nv+w);
+        MYARRAY<int> from = this->from(nv+w);
+        MYARRAY<int> to = this->to(nv+w);
         double total_i = 0;
         for (size_t i = 0; i < from.size(); ++i)
         {
@@ -641,16 +607,11 @@ PercolRect::PercolRect(int _rows, int _cols) : rows(_rows), cols(_cols)
     V.resize(2);
     W.resize(rows*cols - 2);
     I.resize((rows-1)*cols + rows*(cols-1));
-    difV.resize((rows-1)*cols + rows*(cols-1));
-    IdifV.resize((rows-1)*cols + rows*(cols-1));
+    difV.resize( I.size() );
+    IdifV.resize(I.size());
     Sigma.resize(I.size());
     V[0] = 1.0;
     V[1] = -1.0;
-//    selectSigma(combo->setCurrentItem());
-//    Sigma.fill(1.0);
-    //Sigma[ 5 ] = 0.0;
-    //Sigma[ 11 ] = 0.0;
-    //Sigma[ 20 ] = 0.0;
 }
 
 PercolRect::~PercolRect()
@@ -663,72 +624,72 @@ struct RectHelper
     RectHelper(int _rows,int _cols) : rows(_rows), cols(_cols) {}
 
     // compute number v of the node located at r,c
-    int v(int r, int c) 
-    { 
+    int v(int r, int c)
+    {
         int i = r + rows * c;
         if (r == 0 && c == 0) return 0;
         if (r == rows-1 && c == cols-1) return 1;
         return i + 1;
     }
     // compute location r,c of node number v
-    QPair<int,int> rc(int v) 
-    { 
+    MYPAIR<int,int> rc(int v)
+    {
         if (v == 0) return qMakePair( 0, 0 );
         if (v == 1) return qMakePair( rows-1, cols-1 );
         v -= 1;
-        return qMakePair( v % rows, v / rows ); 
+        return qMakePair( v % rows, v / rows );
     }
     // compute number ibu of the bottom-up edge coming from node at r,c
-    int ibu(int r, int c) 
-    { 
-        return r*cols + c; //! 
+    int ibu(int r, int c)
+    {
+        return r*cols + c; //!
     }
     // compute location r,c of the bottom end of the bottom-up edge i
-    QPair<int,int> rcbu(int i) 
-    { 
+    MYPAIR<int,int> rcbu(int i)
+    {
         return qMakePair( i / cols, i % cols );
     }
     // compute number ilr of the left-right edge coming from node at r,c
-    int ilr(int r, int c) 
-    { 
-        return (rows-1)*cols + r + rows*c; 
+    int ilr(int r, int c)
+    {
+        return (rows-1)*cols + r + rows*c;
     }
     // compute location r,c of the left end of the left-right edge i
-    QPair<int,int> rclr(int i) 
-    {  
+    MYPAIR<int,int> rclr(int i)
+    {
         i -= (rows-1)*cols;
-        return qMakePair( i % rows, i / rows ); 
+        return qMakePair( i % rows, i / rows );
     }
 };
 
-QPair<int,int> PercolRect::ends(int i) const
+MYPAIR<int,int> PercolRect::ends(int i) const
 {
     RectHelper h(rows,cols);
     if (i < (rows-1)*cols) /* bottom-up edge */
     {
-        QPair<int,int> rc = h.rcbu(i);
+        MYPAIR<int,int> rc = h.rcbu(i);
         int v_from = h.v( rc.first, rc.second );
         int v_to = h.v( rc.first + 1, rc.second );
         return qMakePair( v_from, v_to );
     }
     else /* left-to-right edge */
     {
-        QPair<int,int> rc = h.rclr(i);
+        MYPAIR<int,int> rc = h.rclr(i);
         int v_from = h.v( rc.first, rc.second );
         int v_to = h.v( rc.first, rc.second + 1 );
         return qMakePair( v_from, v_to );
     }
 }
 
-Q3MemArray<int> PercolRect::from(int v) const
+MYARRAY<int> PercolRect::from(int v) const
 {
     RectHelper h(rows,cols);
-    QPair<int,int> rc = h.rc(v);
+    MYPAIR<int,int> rc = h.rc(v);
     int r = rc.first;
     int c = rc.second;
     int a, b;
 
-    Q3MemArray<int> res;
+    MYARRAY<int> res;
 
     if (r < rows-1 && c < cols-1)
     {
@@ -753,15 +714,15 @@ Q3MemArray<int> PercolRect::from(int v) const
     return res;
 }
 
-Q3MemArray<int> PercolRect::to(int v) const
+MYARRAY<int> PercolRect::to(int v) const
 {
     RectHelper h(rows,cols);
-    QPair<int,int> rc = h.rc(v);
+    MYPAIR<int,int> rc = h.rc(v);
     int r = rc.first;
     int c = rc.second;
     int a, b;
 
-    Q3MemArray<int> res;
+    MYARRAY<int> res;
 
     if (r > 0 && c > 0)
     {
@@ -788,16 +749,16 @@ Q3MemArray<int> PercolRect::to(int v) const
 
 int PercolRect::S(int i, int v) const
 {
-    QPair<int,int> rc = PercolRect::ends(i);
+    MYPAIR<int,int> rc = PercolRect::ends(i);
     if (v == rc.first) return -1;
     if (v == rc.second) return +1;
     return 0;
 }
 
-QPair<double,double> PercolRect::xy(int v) const
+MYPAIR<double,double> PercolRect::xy(int v) const
 {
     RectHelper h(rows,cols);
-    QPair<int,int> rc = h.rc(v);
+    MYPAIR<int,int> rc = h.rc(v);
     return qMakePair(double(rc.second), double(rc.first));
 }
 
@@ -830,7 +791,7 @@ int Percol2D::index_of_Rcr() const
     for (int i = 0; i < nI(); ++i)
     {
 	double I_i = I[i];
-	QPair<int,int> ends_i = ends(i);
+	MYPAIR<int,int> ends_i = ends(i);
 	double V_i = ends_i.first < nV()
 	    ? V[ends_i.first]
 	    : W[ends_i.first - nV()];
@@ -859,8 +820,8 @@ QVector<int> Percol2D::index_for_sorted_W() const
 
     struct MyLessThan
     {
-        const Q3MemArray<double>& w;
-        MyLessThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        const MYARRAY<double>& w;
+        MyLessThan(const MYARRAY<double>& w_) : w(w_) {}
         bool operator()(int a, int b) const { return w[a] < w[b]; }
     };
 
@@ -879,9 +840,9 @@ QVector<int> Percol2D::index_for_sorted_I() const
     struct MyGreaterThan
 //  struct MyLessThan
     {
-        const Q3MemArray<double>& w;
-        MyGreaterThan(const Q3MemArray<double>& w_) : w(w_) {} 
-//        MyLessThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        const MYARRAY<double>& w;
+        MyGreaterThan(const MYARRAY<double>& w_) : w(w_) {}
+//        MyLessThan(const MYARRAY<double>& w_) : w(w_) {}
         bool operator()(int a, int b) const { return fabs(w[a]) >fabs(w[b]); }
 //      bool operator()(int a, int b) const { return fabs(w[a]) < fabs(w[b]); }
     };
@@ -901,15 +862,15 @@ QVector<int> Percol2D::index_for_sorted_difV() const
 
 /*    struct MyLessThan
     {
-        const Q3MemArray<double>& w;
-        MyLessThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        const MYARRAY<double>& w;
+        MyLessThan(const MYARRAY<double>& w_) : w(w_) {}
         bool operator()(int a, int b) const { return fabs(w[a]) < fabs(w[b]); }
     };
 */
     struct MyGreaterThan
     {
-        const Q3MemArray<double>& w;
-        MyGreaterThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        const MYARRAY<double>& w;
+        MyGreaterThan(const MYARRAY<double>& w_) : w(w_) {}
 //        bool operator()(int a, int b) const { return w[a] > w[b]; }
         bool operator()(int a, int b) const { return fabs(w[a]) > fabs(w[b]); }
     };
@@ -929,15 +890,15 @@ QVector<int> Percol2D::index_for_sorted_IdifV() const
 
 /*    struct MyLessThan
     {
-        const Q3MemArray<double>& w;
-        MyLessThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        const MYARRAY<double>& w;
+        MyLessThan(const MYARRAY<double>& w_) : w(w_) {}
         bool operator()(int a, int b) const { return fabs(w[a]) < fabs(w[b]); }
     };
 */
     struct MyGreaterThan
     {
-        const Q3MemArray<double>& w;
-        MyGreaterThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        const MYARRAY<double>& w;
+        MyGreaterThan(const MYARRAY<double>& w_) : w(w_) {}
 //        bool operator()(int a, int b) const { return w[a] > w[b]; }
         bool operator()(int a, int b) const { return fabs(w[a]) > fabs(w[b]); }
     };
@@ -957,15 +918,15 @@ QVector<int> Percol2D::index_for_sorted_Sigma() const
 /*
     struct MyLessThan
     {
-        const Q3MemArray<double>& w;
-        MyLessThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        const MYARRAY<double>& w;
+        MyLessThan(const MYARRAY<double>& w_) : w(w_) {}
         bool operator()(int a, int b) const { return w[a] < w[b]; }
     };
     */
     struct MyGreaterThan
     {
-        const Q3MemArray<double>& w;
-        MyGreaterThan(const Q3MemArray<double>& w_) : w(w_) {} 
+        const MYARRAY<double>& w;
+        MyGreaterThan(const MYARRAY<double>& w_) : w(w_) {}
         bool operator()(int a, int b) const { return w[a] > w[b]; }
     };
 
