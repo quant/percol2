@@ -115,8 +115,8 @@ void MainWindow::initMenuBar()
     saveAction = new QAction("Save As", this);
     openAction = new QAction("Open file", this);
     chooseFontAction = new QAction("Choose Font", this);
-    saveAction->setStatusTip(tr("Ñîõðàíèòü â ôàéëå íàïðÿæåíèÿ, òîêè è ïàðàìåòðû ðàñ÷åòà"));
-    openAction->setStatusTip(tr("Çàãðóçèòü ïàðàìåòðû èç ôàéëà"));
+    saveAction->setStatusTip(tr("Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ Ð² Ñ„Ð°Ð¹Ð»Ðµ Ð½Ð°Ð¿Ñ€ÑÐ¶ÐµÐ½Ð¸Ñ, Ñ‚Ð¾ÐºÐ¸ Ð¸ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ñ€Ð°ÑÑ‡ÐµÑ‚Ð°"));
+    openAction->setStatusTip(tr("Ð—Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð¸Ð· Ñ„Ð°Ð¹Ð»Ð°"));
     saveAction->setShortcut(tr("Ctrl+S"));
     openAction->setShortcut(tr("Ctrl+O"));
     exitAction->setShortcut(tr("Ctrl+Q"));
@@ -139,7 +139,7 @@ void MainWindow::initMenuBar()
 
 /*    Q3PopupMenu* help = new Q3PopupMenu( menu );
     help->insertItem("&About", this, SLOT(help()), Qt::Key_F1);
-    menu->insertItem(tr("Ïîìîùü"),help);
+    menu->insertItem(tr("ÐŸÐ¾Ð¼Ð¾Ñ‰ÑŒ"),help);
     */
 }
 void MainWindow::initToolBar()
@@ -334,7 +334,7 @@ void MainWindow::initControlDockWindow()
                 L->addWidget(gbRType);
 
                 QRadioButton *type1 = new QRadioButton(tr("RNW Exp(-kappa*x)"));
-//                QRadioButton *type1 = new QRadioButton(tr("Îäèíàêîâûå ñîïðîòèâëåíèÿ"));
+//                QRadioButton *type1 = new QRadioButton(tr("ÐžÐ´Ð¸Ð½Ð°ÐºÐ¾Ð²Ñ‹Ðµ ÑÐ¾Ð¿Ñ€Ð¾Ñ‚Ð¸Ð²Ð»ÐµÐ½Ð¸Ñ"));
                 QRadioButton *type2 = new QRadioButton(tr("RNW 0 or 1"));
                 QRadioButton *type3 = new QRadioButton(tr("model RNW"));
 
@@ -713,7 +713,7 @@ bool MainWindow::save()
             1
             );
         if(n){
-           return this->saveAs(); //âûáèðàåì íîâîå èìÿ
+           return this->saveAs(); //Ð²Ñ‹Ð±Ð¸Ñ€Ð°ÐµÐ¼ Ð½Ð¾Ð²Ð¾Ðµ Ð¸Ð¼Ñ
         }
     }
     //Saving the file!
@@ -776,7 +776,7 @@ bool MainWindow::save()
             1
             );
         if(n){
-           return this->saveAs(); //âûáèðàåì íîâîå èìÿ
+           return this->saveAs(); //Ð²Ñ‹Ð±Ð¸Ñ€Ð°ÐµÐ¼ Ð½Ð¾Ð²Ð¾Ðµ Ð¸Ð¼Ñ
         }
     }
     //Saving the file!
@@ -812,7 +812,7 @@ bool MainWindow::save()
             1
             );
         if(n){
-           return this->saveAs(); //âûáèðàåì íîâîå èìÿ
+           return this->saveAs(); //Ð²Ñ‹Ð±Ð¸Ñ€Ð°ÐµÐ¼ Ð½Ð¾Ð²Ð¾Ðµ Ð¸Ð¼Ñ
         }
     }
     //Saving the file!
@@ -847,7 +847,7 @@ bool MainWindow::save()
             1
             );
         if(n){
-           return this->saveAs(); //âûáèðàåì íîâîå èìÿ
+           return this->saveAs(); //Ð²Ñ‹Ð±Ð¸Ñ€Ð°ÐµÐ¼ Ð½Ð¾Ð²Ð¾Ðµ Ð¸Ð¼Ñ
         }
     }
     //Saving the file!
@@ -1701,7 +1701,7 @@ void MainWindow::computeRX()
         }
         if(this->flgStop) {this->flgStop=false; return;}
         double sum=0.;
-//! çàêîììåíòèðîâàëà ñòðîêó íèæå, ïîñêîëüêó â singleSigma óæå äâà àðãóìåíòà
+//! Ð·Ð°ÐºÐ¾Ð¼Ð¼ÐµÐ½Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ð»Ð° ÑÑ‚Ñ€Ð¾ÐºÑƒ Ð½Ð¸Ð¶Ðµ, Ð¿Ð¾ÑÐºÐ¾Ð»ÑŒÐºÑƒ Ð² singleSigma ÑƒÐ¶Ðµ Ð´Ð²Ð° Ð°Ñ€Ð³ÑƒÐ¼ÐµÐ½Ñ‚Ð°
         //        sigma_m=this->portion*singleSigma(this->randc);//0.01*sigma00*jj;
         this->computeModel();
     for (int i = 0; i < ni; ++i)
@@ -3725,7 +3725,7 @@ void MainWindow::computeEFT()
 //    dE=(14.*kT)/500.;
     if(dE>=0.6) dE=0.5;
     Ec=this->EFT;
-//    if(Ec<Uc) Ec=Uc+dE; //Ýòî íåïðàâèëüíî!!!
+//    if(Ec<Uc) Ec=Uc+dE; //Ð­Ñ‚Ð¾ Ð½ÐµÐ¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð¾!!!
 //    double g0=cohU(Ec, this->Ey, r1, V, Uc);
     double g0=sedlo(Ec, this->Ey, this->Ex, V);
     if(kT==0)
@@ -4247,7 +4247,7 @@ double MainWindow::singleSigma(double r, double rEx)
         }
         if(G_type==1) Gtot=GTunnel;
         if(G_type==2) Gtot=GOver;
-        double eps=0;//0.0075*this->U-1.02;
+        //double eps=0;//0.0075*this->U-1.02;
 //        if(G_type==3) Gtot=GOver+GTunnel*exp(-eps/kT);
     }
     Gtot=Gtot*this->G_ser/(Gtot+this->G_ser);
