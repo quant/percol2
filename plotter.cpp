@@ -485,15 +485,15 @@ double PlotSettings::nicenum(double x, int round)
     expv = floor(log10(x));
     f = x/expt(10., expv);		/* between 1 and 10 */
     if (round)
-	if (f<1.5) nf = 1.;
-	else if (f<3.) nf = 2.;
-	else if (f<7.) nf = 5.;
-	else nf = 10.;
+    if (f<1.5) nf = 1.;
+    else if (f<3.) nf = 2.;
+    else if (f<7.) nf = 5.;
+    else nf = 10.;
     else
-	if (f<=1.) nf = 1.;
-	else if (f<=2.) nf = 2.;
-	else if (f<=5.) nf = 5.;
-	else nf = 10.;
+    if (f<=1.) nf = 1.;
+    else if (f<=2.) nf = 2.;
+    else if (f<=5.) nf = 5.;
+    else nf = 10.;
     return nf*expt(10., expv);
 }
 double PlotSettings::expt(double a, int n)
@@ -530,7 +530,7 @@ bool Plotter::openPlot()
      if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
      {
          QString msg;
-         msg.sprintf("cannot open file %s: %s",fileName.toAscii(), file.errorString().toAscii());
+         msg.sprintf("cannot open file %s: %s",fileName.toLocal8Bit(), file.errorString().toLocal8Bit());
          QMessageBox::information(this, tr("Ooops!") ,msg);
          return false;
      }

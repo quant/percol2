@@ -3,6 +3,7 @@
 #define myparam_h_included
 
 #include <QtGui>
+#include <QtWIdgets>
 
 class MyParamD : public QObject
 {

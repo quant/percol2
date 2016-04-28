@@ -5,6 +5,7 @@
 //#include <qwidget.h>
 //Added by qt3to4:
 #include <QtGui>
+#include <QtWidgets>
 #include <QResizeEvent>
 #include <QWheelEvent>
 #include <QMouseEvent>

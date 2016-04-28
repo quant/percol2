@@ -8,8 +8,9 @@ main(int argc, char **argv)
 {
     QApplication app( argc, argv );
 //    QPalette pal(Qt::green.light(200), Qt::blue.light(200));
-    QTextCodec::setCodecForTr(QTextCodec::codecForName("CP1251"));
- 
+    QTextCodec::setCodecForLocale(QTextCodec::codecForName("CP1251"));
+
+
     MainWindow mainWindow;
 
     mainWindow.resize(mainWindow.sizeHint());
@@ -19,6 +20,6 @@ main(int argc, char **argv)
     mainWindow.show();
 
     QObject::connect( qApp, SIGNAL(lastWindowClosed()), qApp, SLOT(quit()) );
-    
+
     return app.exec();
 }

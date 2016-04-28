@@ -617,7 +617,8 @@ void MainWindow::setModel()
     if (model) delete model;
     model = new PercolRect(this->rows,this->cols);
 }
-MainWindow::MainWindow(QWidget *parent, Qt::WFlags f)
+
+MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags f)
 : randc(0.5),
 //Exc(5.), Eyc(5.),
 density(1000.),sigmaU(1.e2), flgStop(false),portion(0.01),
@@ -888,7 +889,7 @@ void MainWindow::help()
     if (!about)
     {
         char buf[200];
-        MKLGetVersionString(buf,sizeof(buf)-1);
+        MKL_Get_Version_String(buf,sizeof(buf)-1);
         buf[sizeof(buf)-1] = 0;
         about = new QMessageBox("Percolation",buf,
            QMessageBox::Information, 1, 0, 0, this);
@@ -1162,7 +1163,7 @@ void MainWindow::drawModeldV()
     QVector<double> Vij(nI);
     for (int i = 0; i < model->nI(); ++i)
     {
- 	QPair<int,int> ends_i = model->ends(i);
+    QPair<int,int> ends_i = model->ends(i);
     if(ends_i.first < nv) V_1=model->V[ends_i.first];
     else V_1=model->W[ends_i.first-nv];
     if(ends_i.second < nv) V_2=model->V[ends_i.second];
@@ -1226,7 +1227,7 @@ void MainWindow::drawModelJ()
     QVector<double> Jij(nI);
     for (int i = 0; i < model->nI(); ++i)
     {
- 	QPair<int,int> ends_i = model->ends(i);
+    QPair<int,int> ends_i = model->ends(i);
     if(ends_i.first < nv) V_1=model->V[ends_i.first];
     else V_1=model->W[ends_i.first-nv];
     if(ends_i.second < nv) V_2=model->V[ends_i.second];
@@ -1869,7 +1870,7 @@ void MainWindow::computeVimax()
     {
         if(fabs(model->Sigma[i])!=this->sigmaU)
         {
-	QPair<int,int> ends_i = model->ends(i);
+    QPair<int,int> ends_i = model->ends(i);
     if(ends_i.first < nv) V_1=model->V[ends_i.first];
     else V_1=model->W[ends_i.first-nv];
     if(ends_i.second < nv) V_2=model->V[ends_i.second];
@@ -2276,7 +2277,7 @@ void MainWindow::compute_deltaVx()
     {
         if(fabs(model->Sigma[i])!=this->sigmaU)
         {
-	QPair<int,int> ends_i = model->ends(i);
+    QPair<int,int> ends_i = model->ends(i);
     if(ends_i.first < nv) V_1=model->V[ends_i.first];
     else V_1=model->W[ends_i.first-nv];
     if(ends_i.second < nv) V_2=model->V[ends_i.second];
@@ -2585,7 +2586,7 @@ void MainWindow::compute_pdV()
       int ni;
       double yy, yn;
       for (;;) // in fact we have only 10 seeds to try in the worst case
-	{
+    {
            this->seed=iseed;
            this->computeModel();
            iseed++;
@@ -2593,7 +2594,7 @@ void MainWindow::compute_pdV()
            yy=model->conductivity;
            yn=model->capacity;
            if (yy > Cond_min) break;
-	}
+    }
         this->CondDist[j]=yy;
         double yeff=effective_medium(y_old);
         y_old=yeff;
@@ -2885,7 +2886,7 @@ void MainWindow::compute_pdV()
     {
         if(fabs(model->Sigma[i])!=this->sigmaU)
         {
-	QPair<int,int> ends_i = model->ends(i);
+    QPair<int,int> ends_i = model->ends(i);
     if(ends_i.first < nv) V_1=model->V[ends_i.first];
     else V_1=model->W[ends_i.first-nv];
     if(ends_i.second < nv) V_2=model->V[ends_i.second];
@@ -4112,7 +4113,7 @@ void MainWindow::potential()
         data1.push_back(x);
         data1.push_back(Ux+0.5*this->Ey);
         this->plotterU->setCurveData(this->numOfCurve,data1);
- 
+
   }
   this->numOfCurve++;
   }

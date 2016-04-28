@@ -1,7 +1,7 @@
 #include "percol2d.h"
 #include "mkl.h"
 #include <cassert>
-#include <QMessageBox>
+#include <QtWidgets/QMessageBox>
 #include <QString>
 #include <QFile>
 #include <cmath>
@@ -789,20 +789,20 @@ int Percol2D::index_of_Rcr() const
     int i_max = 0;
     for (int i = 0; i < nI(); ++i)
     {
-	double I_i = I[i];
-	MYPAIR<int,int> ends_i = ends(i);
-	double V_i = ends_i.first < nV()
-	    ? V[ends_i.first]
-	    : W[ends_i.first - nV()];
-	V_i -= ends_i.second < nV()
-	    ? V[ends_i.second]
-	    : W[ends_i.second - nV()];
-	double IV_i = fabs(I_i * V_i);
-	if (IV_i > IV_max)
-	{
-	    IV_max = IV_i;
-	    i_max = i;
-	}
+    double I_i = I[i];
+    MYPAIR<int,int> ends_i = ends(i);
+    double V_i = ends_i.first < nV()
+        ? V[ends_i.first]
+        : W[ends_i.first - nV()];
+    V_i -= ends_i.second < nV()
+        ? V[ends_i.second]
+        : W[ends_i.second - nV()];
+    double IV_i = fabs(I_i * V_i);
+    if (IV_i > IV_max)
+    {
+        IV_max = IV_i;
+        i_max = i;
+    }
     }
     return i_max;
 }
