@@ -13,8 +13,7 @@ public:
     double& operator=(double d) { return v = d; }
     double& operator+=(double d) { return v += d; }
     operator double() const { return v; }
-    void setDisplay(const QString& label, QWidget *parent);
-    void setDisplay(const QString& label, QLayout *parent);
+    void setDisplay(const QString& label, QWidget *parent, QBoxLayout *layout = 0);
     ~MyParamD() { if (ledit) delete ledit; }
 
 public slots:
@@ -37,8 +36,7 @@ public:
     int& operator=(int d) { return v = d; }
     int& operator+=(int d) { return v += d; }
     operator int() const { return v; }
-    void setDisplay(const QString& label, QWidget *parent);
-    void setDisplay(const QString& label, QLayout *parent);
+    void setDisplay(const QString& label, QWidget *parent, QBoxLayout *layout = 0);
     ~MyParamI() { if (ledit) delete ledit; }
 
 public slots:

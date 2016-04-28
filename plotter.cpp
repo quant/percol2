@@ -1,8 +1,4 @@
-//#include <qpainter.h>
-//#include <qstyle.h>
-//#include <qtoolbutton.h>
-//Added by qt3to4:
-//#include <Q3TextStream>
+#define _CRT_SECURE_NO_WARNINGS 1
 #include <QByteArray>
 #include "plotter.h"
 #include <cmath>
@@ -212,8 +208,8 @@ void Plotter::paintEvent(QPaintEvent *event)
    for(int i=0; i<(int)rects.size();++i)
         painter.drawImage(rects[i].topLeft(), pixmap.toImage(), rects[i]);
     if(rubberBandIsShown){
-        painter.setPen(colorGroup().light());
-        painter.drawRect(rubberBandRect.normalize());
+        painter.setPen( this->palette().color(QPalette::Light) );
+        painter.drawRect(rubberBandRect.normalized());
     }
     if (hasFocus())
     {
@@ -241,7 +237,7 @@ void Plotter::mousePressEvent(QMouseEvent *event)
 }
 void Plotter::mouseMoveEvent(QMouseEvent *event)
 {
-    if (event->state() & Qt::LeftButton)
+    if (event->buttons() & Qt::LeftButton)
     {
         updateRubberBandRegion();
         rubberBandRect.setBottomRight(event->pos());
@@ -262,10 +258,10 @@ void Plotter::mouseReleaseEvent(QMouseEvent *event)
         updateRubberBandRegion();
         setCursor(Qt::OpenHandCursor);
 //        unsetCursor();
-        QRect rect = rubberBandRect.normalize();
+        QRect rect = rubberBandRect.normalized();
         if(rect.width()<4||rect.height()<4)
             return;
-        rect.moveBy(-Margin, -Margin);
+        rect.translate(-Margin, -Margin);
 
         PlotSettings prevSettings = zoomStack[curZoom];
         PlotSettings settings;
@@ -282,9 +278,9 @@ void Plotter::mouseReleaseEvent(QMouseEvent *event)
     }
     if (event->button() == Qt::RightButton)
     {
-   QPoint xy_pos = event->pos();
-   int ixmouse=xy_pos.x();
-   int iymouse=xy_pos.y();
+   //QPoint xy_pos = event->pos();
+   //int ixmouse=xy_pos.x();
+   //int iymouse=xy_pos.y();
 
     }
 
@@ -345,7 +341,7 @@ void Plotter::wheelEvent(QWheelEvent *event)
 }
 void Plotter::updateRubberBandRegion()
 {
-    QRect rect=rubberBandRect.normalize();
+    QRect rect=rubberBandRect.normalized();
     update(rect.left(), rect.top(), rect.width(), 1);
     update(rect.left(), rect.top(), 1, rect.height());
     update(rect.left(), rect.bottom(), rect.width(), 1);
@@ -366,9 +362,9 @@ void Plotter::drawGrid(QPainter *painter)
     QRect rect(Margin, Margin,
         width() - 2*Margin,height() - 2*Margin);
     PlotSettings settings = zoomStack[curZoom];
-    QPen quiteDark = colorGroup().dark().light();
+    QPen quiteDark = this->palette().color(QPalette::Dark);
  //   choke me;
-    QPen light = colorGroup().light();
+    QPen light = this->palette().color(QPalette::Light);
     for(int i = 0; i<=settings.numXTicks; ++i)
     {
         int x = rect.left() + (i*(rect.width()-1)/settings.numXTicks);
@@ -534,7 +530,7 @@ bool Plotter::openPlot()
      if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
      {
          QString msg;
-         msg.sprintf(tr("cannot open file %s: %s"),fileName.ascii(), file.errorString().ascii());
+         msg.sprintf("cannot open file %s: %s",fileName.toAscii(), file.errorString().toAscii());
          QMessageBox::information(this, tr("Ooops!") ,msg);
          return false;
      }

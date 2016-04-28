@@ -10,13 +10,13 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QPaintEvent>
-#include <vector>
+#include <QVector>
 #include <map>
 
 class QToolButton;
 class PlotSettings;
 
-typedef std::vector<double> CurveData;
+typedef QVector<double> CurveData;
 
 class Plotter : public QWidget
 {

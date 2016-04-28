@@ -1,14 +1,13 @@
 #include "percol2d.h"
 #include "mkl.h"
 #include <cassert>
-#include <qmessagebox.h>
-#include <qstring.h>
-#include <qfile.h>
-//Added by qt3to4:
-#include <Q3MemArray>
+#include <QMessageBox>
+#include <QString>
+#include <QFile>
 #include <cmath>
-#include <q3textstream.h>
 #include <QMap>
+#include <QVector>
+#include <QTextStream>
 
 #define DATAOF(array) array.data()
 #define MYMAP  QMap
@@ -54,7 +53,7 @@ void Percol2D::compute_general()
         {
             double sir = this->S(i,r+nv);
             double sic = this->S(i,c+nv);
-#define LHS(r,c) lhs.at((r)+nw*(c))
+#define LHS(r,c) lhs[(r)+nw*(c)]
             LHS(r,c) +=  sir * sigma * sic;
             LHS(r,r) +=  sir * sigma * sir;
             LHS(c,r) +=  sic * sigma * sir;
@@ -80,7 +79,7 @@ void Percol2D::compute_general()
         for (int v = 0; v < nv; ++v)
         {
             if (this->S(i,v) == 0) continue;
-            t.at(i) += this->S(i,v) * this->V[v] * this->Sigma[i];
+            t[i] += this->S(i,v) * this->V[v] * this->Sigma[i];
         }
     }
 
@@ -238,7 +237,7 @@ void Percol2D::computeOld()
         //aij is stored in ab(kl+ku+1+i-j,j) for max(1,j-ku) ? i ? min(n,j+kl).
 #undef LHS
 #define LHS(r,c) lhs[kl + ku + r - c + c*lhs_rows]
-        LHS(r,c) = e.data();
+        LHS(r,c) = e.value();
     }
 
     // Build temp vector = SIGMA S_V V
@@ -249,7 +248,7 @@ void Percol2D::computeOld()
         for (int v = 0; v < nv; ++v)
         {
             if (this->S(i,v) == 0) continue;
-            t.at(i) += this->S(i,v) * this->V[v] * this->Sigma[i];
+            t[i] += this->S(i,v) * this->V[v] * this->Sigma[i];
         }
     }
 
@@ -296,7 +295,7 @@ void Percol2D::computeOld()
 #endif
 
     int info;
-    MYARRAY<double> lhs_saved = lhs.copy();
+    MYARRAY<double> lhs_saved = lhs;
     dgbtrf(&nw,&nw,&kl,&ku, DATAOF(lhs),&lhs_rows,DATAOF(ipiv),&info);
 
     if (info > 0)
@@ -317,7 +316,7 @@ void Percol2D::computeOld()
     {
         QFile f("tmp.txt");
         f.open(QIODevice::WriteOnly);
-        Q3TextStream ts(&f);
+        QTextStream ts(&f);
         for (int i=0; i < nw; ++i)
             ts << i << " " << ipiv[i] << "\n";
         f.close();
@@ -422,7 +421,7 @@ void Percol2D::compute()
         //aij is stored in ab(kl+ku+1+i-j,j) for max(1,j-ku) ? i ? min(n,j+kl).
 #undef LHS
 #define LHS(r,c) lhs[/*kl +*/ ku + r - c + c*lhs_rows]
-        LHS(r,c) = e.data();
+        LHS(r,c) = e.value();
     }
 
     // Build temp vector = SIGMA S_V V
@@ -433,7 +432,7 @@ void Percol2D::compute()
         for (int v = 0; v < nv; ++v)
         {
             if (this->S(i,v) == 0) continue;
-            t.at(i) += this->S(i,v) * this->V[v] * this->Sigma[i];
+            t[i] += this->S(i,v) * this->V[v] * this->Sigma[i];
         }
     }
 
@@ -453,7 +452,7 @@ void Percol2D::compute()
     int ONE = 1;
     MYARRAY<int> ipiv( nw );
     int info;
-    MYARRAY<double> lhs_saved = lhs.copy();
+    MYARRAY<double> lhs_saved = lhs;
     MYARRAY<double> wrk( 3*nw );
     MYARRAY<int> iwk( nw );
     MYARRAY<double> dr( nw );
@@ -583,11 +582,11 @@ void Percol2D::compute()
         MYARRAY<int> from = this->from(nv+w);
         MYARRAY<int> to = this->to(nv+w);
         double total_i = 0;
-        for (size_t i = 0; i < from.size(); ++i)
+        for (int i = 0; i < from.size(); ++i)
         {
             total_i +=  this->I[ from[i] ];
         }
-        for (size_t i = 0; i < to.size(); ++i)
+        for (int i = 0; i < to.size(); ++i)
         {
             total_i -=  this->I[ to[i] ];
         }

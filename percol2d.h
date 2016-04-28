@@ -6,10 +6,10 @@
 #ifndef PERCOL2D_H_INCLUDED
 #define PERCOL2D_H_INCLUDED
 
-#include <q3memarray.h>
-#include <qpair.h>
+#include <QVector>
+#include <QPair>
 
-#define MYARRAY  Q3MemArray
+#define MYARRAY  QVector
 #define MYPAIR   QPair
 #define MYVECTOR QVector
 

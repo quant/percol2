@@ -2,7 +2,7 @@
 #ifndef MAINWINDOW_H_INCLUDED
 #define MAINWINDOW_H_INCLUDED
 #include <QtGui>
-#include <vector>
+#include <QVector>
 
 #include "percol2d.h"
 #include "plotter.h"
@@ -88,7 +88,7 @@ private:
     void initPlotConductance();
     void initPlotterCU();
     void initPlotterCT();
-    void mysort(std::vector<double> &v);
+    void mysort(QVector<double> &v);
     void randomizeSigma_0();
     void randomizeSigma_1();
     void randomizeSigma_2();
@@ -119,13 +119,13 @@ private:
     MyParamD T, U, Tmin, Tmax, dT, Umin, Umax, Vijmax, dU, Ex, deltaEx, Ey, rand, EF,EFT,fraction,portion;
     MyParamI cols, rows, seed, i_Rcr;
     MyParamD sigmaU, sigmaMin, r_c, capacity,deviation,a_barrier,Cg0, Delta_r,G_ser,EF0,kappa,y_cr, CUTOFF_SIGMA;
-    std::vector<double> EFTarray;
-    std::vector<double> EFUarray;
-    std::vector<double> AreaEf;
-    std::vector<double> CondDist;
-    std::vector<double> NumJDist;
-    std::vector<int> index_for_sorted_CondDist() const;
-    std::vector<int> index_for_sorted_NumJDist() const;
+    QVector<double> EFTarray;
+    QVector<double> EFUarray;
+    QVector<double> AreaEf;
+    QVector<double> CondDist;
+    QVector<double> NumJDist;
+    QVector<int> index_for_sorted_CondDist() const;
+    QVector<int> index_for_sorted_NumJDist() const;
     int numOfCurve,numOfCurveI,numOfCurveJ,numOfCurveSig,numOfCurvedV;
     double gTun, gOv,randc,density;//, Exc, Eyc, randc;//,Gold;
     bool flgStop;
@@ -147,7 +147,7 @@ private:
     Plotter *plotterE;
     Plotter *plotterCT;
     Plotter *plotterCU;
-    std::vector<double> plotdata;
+    QVector<double> plotdata;
     QLabel *dispCond; // Display of condition number of last computation
     QLabel *dispCapac; // Display of capacity value of last computation
     QLabel *dispConduct; // Display of conductivity value of last computation

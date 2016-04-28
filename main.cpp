@@ -1,7 +1,7 @@
-#include <qtextcodec.h>
+#include <QTextCodec>
 #include "percol2d.h"
 #include "mainwindow.h"
-#include <qapplication.h>
+#include <QApplication>
 
 int
 main(int argc, char **argv)
@@ -14,7 +14,7 @@ main(int argc, char **argv)
 
     mainWindow.resize(mainWindow.sizeHint());
 //    mainWindow.setFont( QFontDialog::getFont( 0, mainWindow.font() ) );
-    mainWindow.setCaption("Percolation model");
+    mainWindow.setWindowTitle("Percolation model");
 //    QApplication::setPalette(pal, true);
     mainWindow.show();
 
