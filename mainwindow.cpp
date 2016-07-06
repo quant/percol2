@@ -13,7 +13,8 @@ const int nJ=5000;
 
 //const double Delta_r=35;//15; //nm
 const double E0=560.;//meV
-const double Vg0=350;//400;//50;
+const double Vg0=240;//350;//240//350;//400;//50;
+//const double Vg0=50;//240//350;//400;//50;
 //const double Cg0=-0.15;//-0.12;//-0.1;//-0.06;//-0.05;//-0.04;
 // const double EF0=20;
 double elementCr = 1e+22;
@@ -294,6 +295,7 @@ void MainWindow::initControlDockWindow()
 
                 QPushButton *b4  = new QPushButton(tr("E_F(U)"));
 ////                QPushButton *b4  = new QPushButton(tr("Area(E)"));
+//                connect(b4,SIGNAL(clicked()), this, SLOT(computeEFU()));
                 connect(b4,SIGNAL(clicked()), this, SLOT(computeAreaE()));
 
 /*                typeCond = new QComboBox;
@@ -622,13 +624,14 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags f)
 : randc(0.5),
 //Exc(5.), Eyc(5.),
 density(1000.),sigmaU(1.e2), flgStop(false),portion(0.01),
-T(0.13), Tmin(0.1),Tmax(5.331), dT(0.1), //Gold(0.0),
-U(465.), Umin(460.), Umax(600.), dU(5.),
+//  T(0.13), Tmin(0.1),Tmax(5.331), dT(0.1), //Gold(0.0),
+  T(0.13), Tmin(0.),Tmax(0.3), dT(0.01), //Gold(0.0),
+U(465.), Umin(460.), Umax(600.), dU(10.),
 //U(155.), Umin(155.), Umax(240.), dU(5.),
 i_Rcr(0),CUTOFF_SIGMA(1.e-15),
 //U(950), Umin(200.), Umax(1500), dU(5.),
 r_c(0.0), Ex(22.), deltaEx(0.), Vijmax(2.), Ey(6.), rand(0.5), EF(20.),EFT(22.),kappa(10.),y_cr(15),
-a_barrier(180.), Cg0(-0.09),Delta_r(22.),G_ser(3.0),EF0(42.),
+a_barrier(180.), Cg0(-0.09),Delta_r(22.),G_ser(1.0),EF0(42.),
 //a_barrier(150.), Cg0(-0.12),Delta_r(30.),G_ser(3.0),EF0(20.),
 QMainWindow(parent,f),
 rows(30), cols(53), numOfCurve(1), seed(1), model(0)
@@ -1538,13 +1541,11 @@ void MainWindow::computeRU1()
     winPlotU->raise();
     winPlotU->activateWindow();
     int G_type = this->typeCond->currentIndex();
-    double EF00=this->EF0;
+    double EF00=this->EF0;  //!!!!!!!!!!
 
         if(G_type!=4)
     {
-        computeEFU();
-//        double EFTU=this->EFUarray[0];
-//        if(EFTU==0) return;
+//        computeEFU();
     }
 
     int j=0;
@@ -1552,7 +1553,7 @@ void MainWindow::computeRU1()
     for (double x = this->Umin; x <= this->Umax; x += this->dU)
     {
         this->U = x;
-        if(G_type==4) this->EFT=EF00;
+/*        if(G_type==4) this->EFT=EF00;
         else
         {
             if(j<this->EFUarray.size())
@@ -1570,11 +1571,11 @@ void MainWindow::computeRU1()
             break;
         }
         }
-
+*/
         computeOneR();
         data.push_back(x);
         double y=model->conductivity;
-        y=6.28*y;
+//        y=6.28*y;
         data.push_back(y);
         this->plotterU->setCurveData(this->numOfCurve,data);
     }
@@ -3231,10 +3232,11 @@ void MainWindow::computeEF_TU()
     this->U=Ucur;
     double EF00=this->EF0;
 
-    double aa=(1000*sqrt(1.2)-350)/this->Delta_r;
+//    double aa=(sqrt(1250.)-350)/this->Delta_r;
+    double aa=(1000*sqrt(1.25)-350)/this->Delta_r;
     aa=aa*aa;
     aa=4*this->U/(1+aa);
-    aa=0;
+//    aa=0;
     if(this->T==0)
     {
         EFT1=aa+EF00+Vdot()-Vd0+this->Cg0*(Ucur-Vg0);//!!!!!!!!!!
@@ -3256,7 +3258,7 @@ void MainWindow::computeEF_TU()
         if(E<=this->EF) sum=sum+Area;
     }
         this->density=sum;
-    if(sum==0)
+    if(sum<0)
     {
             QString s;
             s.sprintf("dot is empty at  U=%lg\n",this->U);
@@ -3311,28 +3313,33 @@ void MainWindow::computeEFU()
     double sum, sum1, Area, sum10, sum11, sum12;
     int NU=1+(this->Umax-this->Umin)/this->dU;
     this->EFUarray.resize(NU);
-//    double Ucur=this->U;//!!!!!!!!!!!
+    double Ucur=this->U;//!!!!!!!!!!!
     this->U=Vg0;
     double Vd0=Vdot();
+//    double aa1=(sqrt(1250.)-350)/this->Delta_r;
     double aa1=(1000*sqrt(1.25)-350)/this->Delta_r;
     aa1=aa1*aa1;
     aa1=4/(1+aa1);
+//    aa1 = 0;
     double EF00=this->EF0;
     if(this->T==0) {
-    int j=0;
-    for(double x=this->Umin; x<=this->Umax; x+=this->dU)
-    {   this->U=x;
+//    int j=0;
+    for(int l=0; l<NU; l++)
+//    for(double x=this->Umin; x<=this->Umax; x+=this->dU)
+    {
+        this->U=this->Umin+this->dU*l;
+//        this->U=x;
         double aa=aa1*this->U;
-        aa=0;
         EFT1=aa+EF00+Vdot()-Vd0+this->Cg0*(this->U-Vg0);
-            if(j<this->EFUarray.size())
+//            if(j<this->EFUarray.size())
             {
-                this->EFUarray[j]=EFT1;
-                j++;
+            this->EFUarray[l]=EFT1;
+//            this->EFUarray[j]=EFT1;
+//                j++;
                 this->EFT=EFT1;
                 this->EFT.updateDisplay();
             }
-            else
+/*            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
@@ -3340,16 +3347,18 @@ void MainWindow::computeEFU()
                 QMessageBox::Ok,QMessageBox::Ok);
 
             }
-    }
+*/    }
     return;
     }
-    int j=0;
-    for(double x=this->Umin; x<=this->Umax; x+=this->dU)
+//    int j=0;
+//    for(double x=this->Umin; x<=this->Umax; x+=this->dU)
+    for(int l=0; l<NU; l++)
     {
-        this->U=x;
+        this->U=this->Umin+this->dU*l;
+//        this->U=x;
         double Vd=Vdot();
         double aa=aa1*this->U;
-        aa=0;
+//        aa=0;
         this->EF=aa+EF00+Vd-Vd0+this->Cg0*(this->U-Vg0);
     int NE=(this->EF+40*this->T-Vd)/dE;
     this->AreaEf.resize(NE);
@@ -3366,10 +3375,10 @@ void MainWindow::computeEFU()
     if(sum==0)
     {
             QString s;
-            s.sprintf("dot is empty at  U=%lg\n",x);
+            s.sprintf("dot is empty at  U=%lg\n",this->U);
             QMessageBox::warning(this, tr("Warning!!!"),s,
                 QMessageBox::Ok,QMessageBox::Ok);
-             j++;
+ //            j++;
     }
     else
     {
@@ -3402,21 +3411,22 @@ void MainWindow::computeEFU()
                 sum11=sum12;
                 EFT1=EFT2;
         }
-            if(j<this->EFUarray.size())
+//            if(j<this->EFUarray.size())
             {
-                this->EFUarray[j]=EFT1;
-                j++;
+            this->EFUarray[l]=EFT1;
+//            this->EFUarray[j]=EFT1;
+//                j++;
                 this->EFT=EFT1;
                 this->EFT.updateDisplay();
             }
-            else
+/*            else
             {
             QString s;
             s.sprintf("element of array of j=%i\n",j);
             QMessageBox::warning(this, tr("is out of bound"),s,
                 QMessageBox::Ok,QMessageBox::Ok);
             break;
-            }
+            }*/
 
     }
     }
@@ -3444,6 +3454,7 @@ void MainWindow::computeAreaE()
     this->EFUarray.resize(NU);
     this->U=Vg0;
     double Vd0=Vdot();
+//    double aa1=(sqrt(1250)-350)/this->Delta_r;
     double aa1=(1000*sqrt(1.25)-350)/this->Delta_r;
     aa1=aa1*aa1;
     aa1=4/(1+aa1);
@@ -3453,7 +3464,7 @@ void MainWindow::computeAreaE()
     for(double x=this->Umin; x<=this->Umax; x+=this->dU)
     {   this->U=x;
         double aa=aa1*this->U;
-        aa=0;
+//        aa=0;
         EFT1=aa+EF00+Vdot()-Vd0+this->Cg0*(this->U-Vg0);
         if(j<this->EFUarray.size())
             {
@@ -3485,7 +3496,7 @@ void MainWindow::computeAreaE()
     sum=0;
     double Vd=Vdot();
     double aa=this->U*aa1;
-    aa=0;
+//    aa=0;
     this->EF=aa+EF00+Vd-Vd0+this->Cg0*(this->U-Vg0);
     int NE=(this->EF+20*this->T-Vd)/dE;
     this->AreaEf.resize(NE);
@@ -3526,6 +3537,7 @@ void MainWindow::computeAreaE()
             EFT2=EFT1-(sum11-sum)*(EFT1-EFT0)/(sum11-sum10);
             sum12=computeSum(NE, dE, Vd, EFT2);
             if(sum12>sum&&sum11<sum||sum12<sum&& sum11>sum)
+
             {
                 sum10=sum11;
                 EFT0=EFT1;
@@ -3545,7 +3557,8 @@ void MainWindow::computeAreaE()
             QString s;
             s.sprintf("element of array of j=%i\n",j);
             QMessageBox::warning(this, tr("is out of bound"),s,
-                QMessageBox::Ok,QMessageBox::Ok);
+
+                                 QMessageBox::Ok,QMessageBox::Ok);
 //            break;
             }
         data.push_back(x);
@@ -3641,11 +3654,12 @@ void MainWindow::computeEFT()
     double Vd0=Vdot();
     this->U=Ucur;
     double Vd=Vdot();
+//    double aa1=(sqrt(1250.)-350)/this->Delta_r;
     double aa1=(1000*sqrt(1.25)-350)/this->Delta_r;
     aa1=aa1*aa1;
     aa1=4/(1+aa1);
     double aa=aa1*this->U;
-    aa=0;
+//    aa=0; //???
     double EF00=this->EF0;
     this->EF=aa+EF00+Vd-Vd0+this->Cg0*(this->U-Vg0);
     int NE=(int)( (this->EF+40*this->Tmax-Vdot())/dE );
@@ -3662,7 +3676,7 @@ void MainWindow::computeEFT()
         if(E<=this->EF) sum=sum+Area;
     }
         this->density=sum;
-    if(sum==0)
+    if(sum<0)
     {
             QString s;
             s.sprintf("dot is empty at  U=%lg\n",Ucur);
@@ -3778,19 +3792,21 @@ void MainWindow::computeRT1()
 //    if(G_type==0) computeEFT();
     if(G_type!=4)
     {
-        computeEFT();
+//        computeEFT(); !!!!!!!!!!!!!
 //        double EFTU=this->EFTarray[0];
 //        if(EFTU==0) return;
     }
     int j=0;
 //    double Ub=Vbarrier(this->rand)+0.5*this->Ey;
     double EF00=this->EF0;
-    for (double x =this->Tmax; x >= this->Tmin; x -= dT)
+//    for (double x =this->Tmax; x >= this->Tmin; x -= dT)
+        for (double x =this->Tmin; x <= this->Tmax; x += dT)
     {
       this->T=x;
+      this->EFT=EF00;
 //    for (int j = 0; j < this->EFTarray.size(); ++j)
 //        this->T=this->Tmax-this->dT*j;
-        if(G_type==4) this->EFT=EF00;
+/*        if(G_type==4) this->EFT=EF00;
         else
         {
             if(j<this->EFTarray.size())
@@ -3807,9 +3823,9 @@ void MainWindow::computeRT1()
                 QMessageBox::Ok,QMessageBox::Ok);
         }
         }
-        this->computeOneR();
+*/        this->computeOneR();
         double y=model->conductivity;
-        y=6.28*y;
+//        y=6.28*y;
         if(y>1e-18)
         {
         data.push_back(x);
@@ -3831,12 +3847,13 @@ void MainWindow::computeRT()
 //    if(G_type!=4&&G_type!=3) computeEFT();
     if(G_type!=4)
     {
-        computeEFT();
+//        computeEFT();
 //        double EFTU=this->EFTarray[0];
 //        if(EFTU==0) return;
     }
     int j=0;
     double EF00=this->EF0;
+//    this->EFT=EF0; // !!!!!!!!!!!!
     for (double x = this->Tmax; x >= this->Tmin; x -= dT)
 //    for (double x = this->Tmin; x <= this->Tmax; x += dT)
     {   this->T=x;
@@ -3846,7 +3863,7 @@ void MainWindow::computeRT()
             return;
         }
 //        if(G_type!=0) this->EFT=EF0;
-        if(G_type==4) this->EFT=EF00;
+/*        if(G_type==4) this->EFT=EF00;
         else
         {
             if(j<this->EFTarray.size())
@@ -3863,7 +3880,7 @@ void MainWindow::computeRT()
                 QMessageBox::Ok,QMessageBox::Ok);
             break;
         }
-        }
+        }*/
         this->computeModel();
         double y=model->conductivity;
         y=(this->cols-3)*y/this->rows;
@@ -4028,7 +4045,7 @@ if(G0>this->CUTOFF_SIGMA)  return G0;
 else return this->CUTOFF_SIGMA;
 }
 
-/*double MainWindow::sedlo(double E, double Ey, double Ex, double V)
+double MainWindow::sedlo(double E, double Ey, double Ex, double V)
 { double  alpha,G0,g,exp0,EE, Ep,Uc;
   Uc=Vdot();
   this->gTun=0;
@@ -4036,9 +4053,11 @@ else return this->CUTOFF_SIGMA;
   G0=0;
   EE=E-0.5*Ey-V;
   Ep=E-0.5*Ey;
-  while(Ep>Uc)
+  g=0.1;
+  while(g>1e-15)
+//      while(Ep>Uc)
   {
-  alpha=-6.2832*EE/Ex;
+  alpha=-6.2831853*EE/Ex;
   exp0=exp(alpha);
   g=1./(1+exp0);
   if(g<0.5) this->gTun+=g;
@@ -4047,10 +4066,11 @@ else return this->CUTOFF_SIGMA;
   EE-=Ey;
   Ep-=Ey;
   }
-if(G0>CUTOFF_SIGMA)  return G0;
-else return CUTOFF_SIGMA;
+  return G0;
+//if(G0>CUTOFF_SIGMA)  return G0;
+//else return CUTOFF_SIGMA;
 }
-*/
+
 void MainWindow::potential()
 {
   winPlotU->show();
@@ -4067,14 +4087,17 @@ void MainWindow::potential()
   double V=Vbarrier(this->rand);
   double Uc=Vdot();
   double a1=a_barrier;
-  double deltaV=11;//15;//20;//17;//8;//10;
-  double Va=V-0.*deltaV;//7.5;//8.500;//meV
-//  V=V*(1+sqrt(0.13/this->T))+1.0*deltaV;
-  V=(V+ .75*deltaV)*(1+sqrt(0.07/this->T));
-  double a0=11;//13;//12;//15;
-  Ex=2/a0*sqrt(E0*(V-Va));
+  double deltaV=10;//11;//15;//20;//17;//8;//10;
+//  double Va=V-13;
+  double Va=V-0.*deltaV;//7.5;//8.500;//meV//БЫЛО
+//  V=V*(1+sqrt(0.06/this->T));
+//  V=(V+ .75*deltaV)*(1+sqrt(0.07/this->T)); //БЫЛО
+  double a0=10;//13;//12;//15;//было
+//  double a0=2./Ex*sqrt(E0*(V-Va));
+  Ex=2/a0*sqrt(E0*(V-Va));//было
   double a2=a0/a1;
   double U00=V-Va;
+  double U01=Va/(1-a2*a2);
 //--------------
 //  double Va=V-6.;//7.5;//8.50;//meV
 //  V=V*(1+sqrt(0.06/this->T));
@@ -4083,7 +4106,6 @@ void MainWindow::potential()
 //  double a2=a0/a1;
 //  double U00=V-Va;
 //-------------
-  double U01=Va/(1-a2*a2);
 //  double Ex0=sqrt(2*E0*U01)/a1;
   double dx=2*a1/100;
   double aa=a0*a0;
@@ -4117,22 +4139,22 @@ void MainWindow::potential()
   }
   this->numOfCurve++;
   }
-double MainWindow::sedlo(double E, double Ey, double Ex, double V)
+/*double MainWindow::sedlo(double E, double Ey, double Ex, double V)
 { double  alpha,G0,g,exp0,EE, Ep,Uc;
   Uc=Vdot();
   double a1=a_barrier;//120;//100;//80;//100;//500;//nm
 //  V=V+(V-Va)*0.04/this->T;
 // if you change parameter here, change them in subroutine potential()
-  double deltaV=11;//15;//20;//17;//8.;
-  double Va=V-0.*deltaV;//7.5;//8.500;//meV
+  double deltaV=10;//11;//15;//20;//17;//8.;
+  double Va=V-0.*deltaV;//7.5;//8.500;//meV  было
 //  double Va=V-13.00;//meV
-//V=V*(1+pow((0.06/this->T),1./3.));//???
+//  V=V*(1+sqrt(0.06/this->T));//???
 //  V=V*(1+pow((0.06/this->T,0),1./3.));
   //V=V*(1+sqrt(0.13/this->T))+1.0*deltaV;
   V=(V+ .75*deltaV)*(1+sqrt(0.07/this->T));
-  double a0=10;//13;//12;//15;
-  Ex=2/a0*sqrt(E0*(V-Va));
-//  double a0=2/Ex*sqrt(E0*(V-Va));
+  double a0=10;//13;//12;//15;//comment 11.05.2016
+  Ex=2/a0*sqrt(E0*(V-Va)); // Ex>13
+//  double a0=2/Ex*sqrt(E0*(V-Va)); //DE comment 11.05.2016!!!!!!!!!!!!!!
   double a2=a0/a1;
   double U00=V-Va;
   double U01=Va/(1-a2*a2);
@@ -4171,7 +4193,7 @@ double MainWindow::sedlo(double E, double Ey, double Ex, double V)
 //if(G0>CUTOFF_SIGMA)  return G0;
 //else return CUTOFF_SIGMA;
 }
-
+*/
 double MainWindow::Vbarrier(double r)
 {
   double BB,rr;
@@ -4210,34 +4232,44 @@ double MainWindow::singleSigma(double r, double rEx)
     V=Vbarrier(r);
     Uc=Vdot();
     double kT=this->T;
-    dE=0.1;
-    if(dE>=0.6) dE=0.5;
+    dE=0.1*kT;
+//    if(dE>=0.6) dE=0.5;
+//    if(kT<=0.2) dE=0.01;
+//    if(kT>=3) dE=1.;
     Ec=this->EFT;
 //    this->Ex=rEx;
 //    double g0=cohU(Ec, this->Ey, r1, V, Uc);
 //    double g0=sedlo(Ec, this->Ey, this->Ex, V);
 //    double g0=sedlo(Ec, this->Ey, rEx, V);
-    if(kT==0)
+    if(kT<=0.01)
     {
 //      if(Ec>Uc)  Gtot=cohU(Ec,this->Ey,r1,V,Uc);
 //      if(Ec>Uc)  Gtot=sedlo(Ec, this->Ey,this->Ex, V);
-      if(Ec>Uc)  Gtot=sedlo(Ec, this->Ey,rEx, V);
-      else Gtot=this->CUTOFF_SIGMA;
+//      if(Ec>Uc)
+          Gtot=sedlo(Ec, this->Ey,rEx, V);
+          return Gtot;
+//      else Gtot=this->CUTOFF_SIGMA;
     }
     else
     {   Gtot=0;
         double GTunnel=0.;
         double GOver=0.;
         int G_type = this->typeCond->currentIndex();//checkedId();
-    Emin=Ec-40*kT;
-    double sumt=0.;
+        Emin=Ec-10*kT;
+        double sumt=0.;
     double aa=0.25*dE/kT;
-    if(Emin<Uc) Emin=Uc+dE;
-        for(E=Emin; E<=Ec+40*kT; E+=dE){
+    int jmin= (int)(20*kT/dE);
+    int jmax= (int)(20*kT/dE);
+//    if(Emin<Uc) Emin=Uc+dE;!!!!!!!!!!!!!!
+//        for(E=Emin; E<=Ec+40*kT; E+=dE){
+    for(int j=-jmin; j<=jmax; j++){
+        E = Ec + j*dE;
 //        for(E=Emin; E<=Ec+20*kT; E+=dE){
-            alpha=0.5*(E-Ec)/kT;
+        alpha=0.5*j*dE/kT;
+//        alpha=0.5*(E-Ec)/kT;
             csh=1./cosh(alpha);
-            sum=aa*csh*csh;
+            sum=csh*csh;
+//            sum=aa*csh*csh;
             sumt=sumt+sum;
 //            double g=cohU(E,this->Ey,r1,V,Uc);
             double g=sedlo(E, this->Ey, rEx, V);
@@ -4249,11 +4281,11 @@ double MainWindow::singleSigma(double r, double rEx)
         if(G_type==2) Gtot=GOver;
         //double eps=0;//0.0075*this->U-1.02;
 //        if(G_type==3) Gtot=GOver+GTunnel*exp(-eps/kT);
+        Gtot = aa*Gtot;
     }
-    Gtot=Gtot*this->G_ser/(Gtot+this->G_ser);
+//    Gtot=Gtot*this->G_ser/(Gtot+this->G_ser);
   if(Gtot<this->CUTOFF_SIGMA) return this->CUTOFF_SIGMA;
-//  if(Gtot>5) return 5;
-  else
+//  else
       return Gtot;
 }
 void MainWindow::randRcr()
